@@ -1,40 +1,46 @@
 import React from 'react';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { OpenAIModel } from '@/lib/types/model';
+import { PlusCircle } from 'lucide-react';
+import { ModelWithIcon } from '@/lib/modelUtils';
 
 interface ModelSelectorProps {
-  selectedModels: string[];
-  setSelectedModels: React.Dispatch<React.SetStateAction<string[]>>;
+    selectedModels: ModelWithIcon[];
+    setSelectedModels: React.Dispatch<React.SetStateAction<ModelWithIcon[]>>;
+    models: ModelWithIcon[];
 }
 
-const ModelSelector: React.FC<ModelSelectorProps> = ({ selectedModels, setSelectedModels }) => {
-  const models = [
-    '(OpenAI) gpt-4o',
-    '(Groq) llama3-70b-8192',
-    '(OpenAI) gpt-4-0125-preview',
-  ];
-
-  const handleModelToggle = (model: string) => {
-    setSelectedModels(prev =>
-      prev.includes(model)
-        ? prev.filter(m => m !== model)
-        : [...prev, model]
-    );
-  };
+const ModelSelector: React.FC<ModelSelectorProps> = ({ selectedModels, setSelectedModels, models }) => {
+  const handleModelSelect = (model: ModelWithIcon) => {
+        if (!selectedModels.some(m => m.id === model.id)) {
+            setSelectedModels(prev => [...prev, model]);
+        }
+    };
 
   return (
-    <div className="space-y-2">
-      {models.map(model => (
-        <div key={model} className="flex items-center space-x-2">
-          <Checkbox
-            id={model}
-            checked={selectedModels.includes(model)}
-            onCheckedChange={() => handleModelToggle(model)}
-          />
-          <label htmlFor={model} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-            {model}
-          </label>
-        </div>
-      ))}
+    <div className="w-full">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" className="w-full justify-start">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add model for comparison
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
+            {models.map(model => (
+                <DropdownMenuItem
+                    key={model.id}
+                    onSelect={() => handleModelSelect(model)}
+                    disabled={selectedModels.some(m => m.id === model.id)}
+                    className="w-full"
+                >
+                    <model.icon className="mr-2 h-4 w-4" />
+                    {model.name}
+                </DropdownMenuItem>
+            ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 };

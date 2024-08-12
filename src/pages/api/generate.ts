@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { openai_client } from '@/lib/openai-client';
+import { OpenAIModel } from '@/lib/types/model';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -13,16 +14,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const completion = await openai_client.chat.completions.create({
-      model: 'gpt-4o-turbo', 
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-    });
+    const responses = await Promise.all(models.map(async (model: OpenAIModel) => {
+      const completion = await openai_client.chat.completions.create({
+        model: model.id,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+      });
 
-    const response = completion.choices[0]?.message?.content || 'No response generated';
-    return res.status(200).json({ response });
+      return {
+        model: model.name,
+        response: completion.choices[0]?.message?.content || 'No response generated'
+      };
+    }));
+
+    return res.status(200).json({ responses });
   } catch (error) {
     console.error('Error generating response:', error);
     return res.status(500).json({ message: 'Error generating response' });

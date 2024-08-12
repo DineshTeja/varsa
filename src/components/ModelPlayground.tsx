@@ -10,16 +10,42 @@ import ModelSelector from '@/components/ModelSelector';
 import PromptInput from '@/components/PromptInput';
 
 const ModelPlayground: React.FC = () => {
-  const [selectedModels, setSelectedModels] = useState<string[]>([]);
-  const [systemPrompt, setSystemPrompt] = useState('You are a helpful assistant.');
-  const [userPrompt, setUserPrompt] = useState('');
-  const [response, setResponse] = useState('');
+    const [selectedModels, setSelectedModels] = useState<string[]>([]);
+    const [systemPrompt, setSystemPrompt] = useState('You are a helpful assistant.');
+    const [userPrompt, setUserPrompt] = useState('');
+    const [response, setResponse] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
-  const handleRun = () => {
-    // Implement the logic to run the selected models
-    console.log('Running models:', selectedModels);
-    setResponse('Model response will appear here.');
-  };
+    const handleRun = async () => {
+        setIsLoading(true);
+        setResponse('');
+
+        try {
+        const res = await fetch('/api/generate', {
+            method: 'POST',
+            headers: {
+            'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+            models: selectedModels,
+            systemPrompt,
+            userPrompt,
+            }),
+        });
+
+        if (!res.ok) {
+            throw new Error('Failed to generate response');
+        }
+
+        const data = await res.json();
+        setResponse(data.response);
+        } catch (error) {
+        console.error('Error generating response:', error);
+        setResponse('An error occurred while generating the response.');
+        } finally {
+        setIsLoading(false);
+        }
+    };
 
   return (
     <div className="w-full max-w-6xl bg-white shadow-md rounded-lg p-6">
@@ -46,7 +72,9 @@ const ModelPlayground: React.FC = () => {
         </div>
       </div>
       <div className="mt-6">
-        <Button onClick={handleRun}>Run</Button>
+        <Button onClick={handleRun} disabled={isLoading}>
+          {isLoading ? 'Generating...' : 'Run'}
+        </Button>
       </div>
       <div className="mt-6">
         <h2 className="text-lg font-semibold mb-2">Response</h2>

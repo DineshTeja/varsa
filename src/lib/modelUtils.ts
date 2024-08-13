@@ -10,8 +10,9 @@ export interface ModelWithIcon extends OpenAIModel {
 }
 
 export const availableModels: ModelWithIcon[] = [
-  { id: 'gpt-4o-turbo', name: 'GPT-4o Turbo', icon: AiOutlineOpenAI, provider: 'openai'},
   { id: 'gpt-4o', name: 'GPT-4o', icon: AiOutlineOpenAI, provider: 'openai'},
+  { id: 'gpt-4o-mini', name: 'GPT-4o Mini', icon: AiOutlineOpenAI, provider: 'openai'},
+  { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', icon: AiOutlineOpenAI, provider: 'openai'},
   { id: 'gpt-4', name: 'GPT-4', icon: AiOutlineOpenAI, provider: 'openai'},
   { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', icon: SiAnthropic, provider: 'anthropic'},
   { id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet', icon: SiAnthropic, provider: 'anthropic'},

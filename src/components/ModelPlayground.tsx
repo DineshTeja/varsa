@@ -6,7 +6,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import ApiKeyInput from '@/components/ApiKeyInput';
 import ModelSelector from '@/components/ModelSelector';
 import PromptInput from '@/components/PromptInput';
-import { OpenAIModel } from '@/lib/types/model';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronUp, Minus } from "lucide-react";
 import { availableModels, ModelWithIcon } from '@/lib/modelUtils';
@@ -17,6 +16,10 @@ interface ModelResponse {
     responseTime: number;
 }
 
+interface ApiKeys {
+  [key: string]: string;
+}
+
 const ModelPlayground: React.FC = () => {
     const [selectedModels, setSelectedModels] = useState<ModelWithIcon[]>([]);    
     const [systemPrompt, setSystemPrompt] = useState('You are a helpful assistant.');
@@ -25,6 +28,11 @@ const ModelPlayground: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [openCollapsibles, setOpenCollapsibles] = useState<{ [key: string]: boolean }>({});
     const [loadingModels, setLoadingModels] = useState<{ [key: string]: boolean }>({});
+    const [apiKeys, setApiKeys] = useState<ApiKeys>({});
+
+    const handleApiKeysChange = (newApiKeys: ApiKeys) => {
+        setApiKeys(newApiKeys);
+    };
 
     const handleRun = async () => {
         setIsLoading(true);
@@ -49,6 +57,7 @@ const ModelPlayground: React.FC = () => {
                             models: [model],
                             systemPrompt,
                             userPrompt,
+                            apiKey: apiKeys[model.provider],
                         }),
                     });
     
@@ -87,13 +96,14 @@ const ModelPlayground: React.FC = () => {
     };
 
     return (
-        <div className="w-full max-w-6xl bg-white shadow-md rounded-lg p-6">
+        <div className="w-full min-h-screen bg-white shadow-md rounded-lg p-6">
           <div className="grid grid-cols-3 gap-6">
             <div className="col-span-2">
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <h2 className="text-lg font-semibold mb-4">Add API keys</h2>
-                  <ApiKeyInput />
+                  <h2 className="text-lg font-semibold mb-2">Add API keys</h2>
+                  <h3 className="text-sm text-gray-500 mb-2">You can paste an .env file too!</h3>
+                  <ApiKeyInput onApiKeysChange={handleApiKeysChange} />
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold mb-4">Add prompt</h2>
@@ -118,6 +128,7 @@ const ModelPlayground: React.FC = () => {
                     selectedModels={selectedModels}
                     setSelectedModels={setSelectedModels}
                     models={availableModels}
+                    apiKeys={apiKeys}
                     />
                 </div>
                 <div className="mt-4">

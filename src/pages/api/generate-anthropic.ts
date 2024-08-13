@@ -2,20 +2,20 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import Anthropic from '@anthropic-ai/sdk';
 import { AnthropicModel } from '@/lib/types/model';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  const { models, systemPrompt, userPrompt } = req.body;
+  const { models, systemPrompt, userPrompt, apiKey } = req.body;
 
-  if (!models || !Array.isArray(models) || models.length === 0) {
-    return res.status(400).json({ message: 'Invalid models' });
+  if (!models || !Array.isArray(models) || models.length === 0 || !apiKey) {
+    return res.status(400).json({ message: 'Invalid request body' });
   }
+
+  const anthropic = new Anthropic({
+    apiKey: apiKey,
+  });
 
   try {
     const responses = await Promise.all(models.map(async (model: AnthropicModel) => {

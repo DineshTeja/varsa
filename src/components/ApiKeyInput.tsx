@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
+import { providerIcons } from '@/lib/modelUtils';
 
 interface ApiKeys {
   [key: string]: string;
@@ -10,15 +11,12 @@ interface ApiKeyInputProps {
 }
 
 const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ onApiKeysChange }) => {
-  const [apiKeys, setApiKeys] = useState<ApiKeys>({
-    openai: '',
-    anthropic: '',
-    groq: '',
-    together: '',
-    mistral: '',
-    cohere: '',
-    perplexity: '',
-  });
+  const [apiKeys, setApiKeys] = useState<ApiKeys>(
+    Object.keys(providerIcons).reduce((acc, provider) => {
+      acc[provider] = '';
+      return acc;
+    }, {} as ApiKeys)
+  );
 
   useEffect(() => {
     const handlePaste = async (e: ClipboardEvent) => {
@@ -31,7 +29,9 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ onApiKeysChange }) => {
           const [key, value] = line.split('=');
           if (key && value && key.endsWith('_API_KEY')) {
             const provider = key.replace('_API_KEY', '').toLowerCase();
-            newApiKeys[provider] = value.trim();
+            if (provider in newApiKeys) {
+              newApiKeys[provider] = value.trim();
+            }
           }
         });
         setApiKeys(newApiKeys);
@@ -51,13 +51,15 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ onApiKeysChange }) => {
 
   return (
     <div className="space-y-4">
-      {Object.entries(apiKeys).map(([provider, value]) => (
-        <div key={provider}>
+      {Object.entries(providerIcons).map(([provider, { icon: Icon, displayName }]) => (
+        <div key={provider} className="flex items-center">
+          <Icon className="mr-2 h-5 w-5" />
           <Input
-            placeholder={`${provider.charAt(0).toUpperCase() + provider.slice(1)} API Key`}
-            value={value}
+            placeholder={`${displayName}`}
+            value={apiKeys[provider]}
             onChange={(e) => handleApiKeyChange(provider, e.target.value)}
             type="password"
+            className="flex-grow"
           />
         </div>
       ))}

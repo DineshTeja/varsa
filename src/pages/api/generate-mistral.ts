@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import OpenAI from 'openai';
-import { OpenAIModel } from '@/lib/types/model';
+import { Mistral } from "@mistralai/mistralai";
+import { MistralModel } from '@/lib/types/model';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -13,11 +13,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ message: 'Invalid request body' });
   }
 
-  const openai = new OpenAI({ apiKey });
+  const mistral = new Mistral({
+        apiKey: process.env["MISTRAL_API_KEY"] ?? "",
+    });
 
   try {
-    const responses = await Promise.all(models.map(async (model: OpenAIModel) => {
-      const completion = await openai.chat.completions.create({
+    const responses = await Promise.all(models.map(async (model: MistralModel) => {
+      const chatResponse = await mistral.chat.complete({
         model: model.id,
         messages: [
           { role: 'system', content: systemPrompt },
@@ -27,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       return {
         model: model.name,
-        response: completion.choices[0]?.message?.content || 'No response generated'
+        response: chatResponse.choices?.[0]?.message?.content ?? 'No response generated'
       };
     }));
 

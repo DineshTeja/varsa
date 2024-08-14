@@ -1,61 +1,63 @@
 import React from 'react';
 import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { PlusCircle, MinusCircle } from 'lucide-react';
 
 interface PromptInputProps {
-  systemPrompt: string;
-  setSystemPrompt: React.Dispatch<React.SetStateAction<string>>;
-  userPrompt: string;
-  setUserPrompt: React.Dispatch<React.SetStateAction<string>>;
-  languagePrompt: string;
-  setLanguagePrompt: React.Dispatch<React.SetStateAction<string>>;
+  messages: { role: string; content: string; isDefault?: boolean }[];
+  setMessages: React.Dispatch<React.SetStateAction<{ role: string; content: string; isDefault?: boolean }[]>>;
 }
 
 const PromptInput: React.FC<PromptInputProps> = ({
-  systemPrompt,
-  setSystemPrompt,
-  userPrompt,
-  setUserPrompt,
-  languagePrompt,
-  setLanguagePrompt,
+  messages,
+  setMessages,
 }) => {
+  const handleAddMessage = () => {
+    const lastMessage = messages[messages.length - 1];
+    const newRole = lastMessage.role === 'user' ? 'assistant' : 'user';
+    setMessages(prev => [...prev, { role: newRole, content: '' }]);
+  };
+
+  const handleMessageChange = (index: number, content: string) => {
+    setMessages(prev => prev.map((msg, i) => i === index ? { ...msg, content } : msg));
+  };
+
+  const handleDeleteMessage = (index: number) => {
+    setMessages(prev => prev.filter((_, i) => i !== index));
+  };
+
   return (
     <div className="space-y-4">
-      <div>
-        <label htmlFor="system-prompt" className="block text-sm font-medium text-gray-700 mb-1">
-          System
-        </label>
-        <Textarea
-          id="system-prompt"
-          value={systemPrompt}
-          onChange={(e) => setSystemPrompt(e.target.value)}
-          placeholder="Enter system prompt"
-          className="min-h-[100px]"
-        />
-      </div>
-      <div>
-        <label htmlFor="user-prompt" className="block text-sm font-medium text-gray-700 mb-1">
-          Language (Embedded into System)
-        </label>
-        <Textarea
-          id="language-prompt"
-          value={languagePrompt}
-          onChange={(e) => setLanguagePrompt(e.target.value)}
-          placeholder="Enter language prompt"
-          className="min-h-[100px]"
-        />
-      </div>
-      <div>
-        <label htmlFor="user-prompt" className="block text-sm font-medium text-gray-700 mb-1">
-          User
-        </label>
-        <Textarea
-          id="user-prompt"
-          value={userPrompt}
-          onChange={(e) => setUserPrompt(e.target.value)}
-          placeholder="Enter user prompt"
-          className="min-h-[100px]"
-        />
-      </div>
+      {messages.map((message, index) => (
+        <div key={index} className="relative">
+          <div className="flex justify-between items-center mb-1">
+            <label className="block text-sm font-medium text-gray-700">
+              {message.role === 'system-language' 
+                ? 'Language (Embedded in System Prompt)' 
+                : message.role.charAt(0).toUpperCase() + message.role.slice(1)}
+            </label>
+            {!message.isDefault && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDeleteMessage(index)}
+                className="p-0.5 h-auto hover:bg-red-500 text-black hover:text-white"
+              >
+                <MinusCircle className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          <div className="relative">
+            <Textarea
+              value={message.content}
+              onChange={(e) => handleMessageChange(index, e.target.value)}
+              className="min-h-[100px]"
+              placeholder={`Enter ${message.role} message`}
+            />
+          </div>
+        </div>
+      ))}
+      <Button variant="outline" onClick={handleAddMessage}><PlusCircle className="w-4 h-4 mr-2" /> Add Message</Button>
     </div>
   );
 };

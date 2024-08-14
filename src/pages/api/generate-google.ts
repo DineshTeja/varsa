@@ -7,9 +7,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  const { models, systemPrompt, userPrompt, languagePrompt, apiKey } = req.body;
+  const { models, messages, apiKey } = req.body;
 
-  if (!models || !Array.isArray(models) || models.length === 0 || !apiKey) {
+  if (!models || !Array.isArray(models) || models.length === 0 || !messages || !Array.isArray(messages) || messages.length === 0 || !apiKey) {
     return res.status(400).json({ message: 'Invalid request body' });
   }
 
@@ -19,7 +19,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const responses = await Promise.all(models.map(async (model: GeminiModel) => {
       const geminiModel = genAI.getGenerativeModel({ model: model.id });
       
-      const prompt = `${systemPrompt}\n${languagePrompt}\n\nUser: ${userPrompt}`;
+      const prompt = messages.map(msg => `${msg.role.charAt(0).toUpperCase() + msg.role.slice(1)}: ${msg.content}`).join('\n\n');
       const result = await geminiModel.generateContent(prompt);
       const response = await result.response;
       const text = response.text();

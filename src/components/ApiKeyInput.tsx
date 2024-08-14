@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { providerIcons } from '@/lib/modelUtils';
+import { useToast } from "@/components/ui/use-toast"
 
 interface ApiKeys {
   [key: string]: string;
@@ -10,7 +11,9 @@ interface ApiKeyInputProps {
   onApiKeysChange: (apiKeys: ApiKeys) => void;
 }
 
-const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ onApiKeysChange }) => {
+export default function ApiKeyInput({ onApiKeysChange }: ApiKeyInputProps) {
+  const { toast } = useToast()
+
   const [apiKeys, setApiKeys] = useState<ApiKeys>(
     Object.keys(providerIcons).reduce((acc, provider) => {
       acc[provider] = '';
@@ -21,19 +24,35 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ onApiKeysChange }) => {
   useEffect(() => {
     const handlePaste = async (e: ClipboardEvent) => {
       const text = e.clipboardData?.getData('text');
-      if (text && text.includes('_API_KEY')) {
+      if (text) {
         e.preventDefault();
         const lines = text.split('\n');
         const newApiKeys = { ...apiKeys };
+        let isValid = true;
+
         lines.forEach(line => {
           const [key, value] = line.split('=');
-          if (key && value && key.endsWith('_API_KEY')) {
-            const provider = key.replace('_API_KEY', '').toLowerCase();
-            if (provider in newApiKeys) {
-              newApiKeys[provider] = value.trim();
+          if (key && value) {
+            if (key.endsWith('_API_KEY')) {
+              const provider = key.replace('_API_KEY', '').toLowerCase();
+              if (provider in newApiKeys) {
+                newApiKeys[provider] = value.trim().replace(/^["']|["']$/g, '');
+              }
+            } else {
+              isValid = false;
             }
           }
         });
+
+        if (!isValid) {
+          toast({
+            title: "Error",
+            description: "Invalid environment file. All variables should be in the format ____API_KEY.",
+            variant: "destructive",
+          });
+          return;
+        }
+
         setApiKeys(newApiKeys);
         onApiKeysChange(newApiKeys);
       }
@@ -66,5 +85,3 @@ const ApiKeyInput: React.FC<ApiKeyInputProps> = ({ onApiKeysChange }) => {
     </div>
   );
 };
-
-export default ApiKeyInput;

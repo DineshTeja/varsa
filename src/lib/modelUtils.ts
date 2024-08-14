@@ -18,6 +18,9 @@ export const availableModels: ModelWithIcon[] = [
   { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', icon: SiAnthropic, provider: 'anthropic'},
   { id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet', icon: SiAnthropic, provider: 'anthropic'},
   { id: 'gemini-pro', name: 'Gemini Pro', icon: SiGooglegemini, provider: 'google'},
+  { id: 'mistral-tiny', name: 'Mistral Tiny', provider: 'mistral', icon: CiSquareQuestion },
+  { id: 'mistral-small', name: 'Mistral Small', provider: 'mistral', icon: CiSquareQuestion },
+  { id: 'mistral-medium', name: 'Mistral Medium', provider: 'mistral', icon: CiSquareQuestion },
 ];
 
 export const providerIcons: { [key: string]: { icon: IconType; displayName: string } } = {

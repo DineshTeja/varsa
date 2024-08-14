@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [isPlayground, setIsPlayground] = useState(false);
+  const [isPlayground, setIsPlayground] = useState(true);
 
   useEffect(() => {
     setIsPlayground(pathname === '/modelplayground');

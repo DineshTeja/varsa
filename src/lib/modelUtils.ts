@@ -1,8 +1,6 @@
 import { OpenAIModel } from './types/model';
 import { AiOutlineOpenAI } from "react-icons/ai";
 import { SiGooglegemini, SiAnthropic, SiPerplexity } from "react-icons/si";
-import { FaRegHandshake, FaGoogle } from "react-icons/fa";
-import { CiSquareQuestion } from "react-icons/ci";
 import { IconType } from 'react-icons';
 import { MistralIcon} from './icons/mistral';
 import { TogetherIcon } from './icons/together';
@@ -34,5 +32,5 @@ export const providerIcons: { [key: string]: { icon: IconType; displayName: stri
   together: { icon: TogetherIcon, displayName: 'Together' },
   mistral: { icon: MistralIcon, displayName: 'Mistral' },
   cohere: { icon: CohereIcon, displayName: 'Cohere' },
-  google: { icon: FaGoogle, displayName: 'Google' },
+  google: { icon: SiGooglegemini, displayName: 'Google Gemini' },
 };

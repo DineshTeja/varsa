@@ -5,7 +5,6 @@ const CohereIconRaw: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     xmlns="http://www.w3.org/2000/svg"
     xmlnsXlink="http://www.w3.org/1999/xlink"
     xmlSpace="preserve"
-    style={{ enableBackground: 'new 0 0 75 75' }}
     viewBox="0 0 75 75"
     width="75"
     height="75"

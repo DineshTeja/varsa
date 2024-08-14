@@ -25,7 +25,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ selectedModels, setSelect
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="w-full justify-start">
               <PlusCircle className="mr-2 h-4 w-4" />
-              Add model for comparison
+              Add model for evaluation
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">

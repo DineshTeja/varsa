@@ -9,6 +9,7 @@ import PromptInput from '@/components/PromptInput';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronUp, Minus } from "lucide-react";
 import { availableModels, ModelWithIcon } from '@/lib/modelUtils';
+import { useToast } from '@/components/ui/use-toast';
 
 interface ModelResponse {
     model: string;
@@ -21,9 +22,11 @@ interface ApiKeys {
   }
 
 const ModelPlayground: React.FC = () => {
+    const { toast } = useToast();
     const [selectedModels, setSelectedModels] = useState<ModelWithIcon[]>([]);    
     const [systemPrompt, setSystemPrompt] = useState('You are a helpful assistant.');
     const [userPrompt, setUserPrompt] = useState('');
+    const [languagePrompt, setLanguagePrompt] = useState('You must produce responses in standard American English. Ensure the language, tone, and style are appropriate for this context.');
     const [responses, setResponses] = useState<ModelResponse[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [openCollapsibles, setOpenCollapsibles] = useState<{ [key: string]: boolean }>({});
@@ -43,6 +46,63 @@ const ModelPlayground: React.FC = () => {
             return acc;
         }, {} as { [key: string]: boolean });
         setLoadingModels(initialLoadingState);
+
+        if (selectedModels.length === 0) {
+            toast({
+                title: 'No models selected',
+                description: 'Please select at least one model to run.',
+                variant: 'destructive',
+            });
+            setIsLoading(false);
+            setLoadingModels({});
+            return;
+        }
+
+        const missingApiKeys = selectedModels.filter(model => !apiKeys[model.provider]);
+        if (missingApiKeys.length > 0) {
+            const missingProviders = Array.from(new Set(missingApiKeys.map(model => model.provider)));
+            toast({
+                title: 'Missing API key(s)',
+                description: `Please provide API key(s) for: ${missingProviders.join(', ')}`,
+                variant: 'destructive',
+            });
+            setIsLoading(false);
+            setLoadingModels({});
+            return;
+        }
+
+        if (systemPrompt === '') {
+            toast({
+                title: 'Missing system prompt',
+                description: `Please provide a system prompt to run the models.`,
+                variant: 'destructive',
+            });
+            setIsLoading(false);
+            setLoadingModels({});
+            return;
+        }
+
+        if (userPrompt === '') {
+            toast({
+                title: 'Missing user prompt',
+                description: `Please provide a user prompt to run the models.`,
+                variant: 'destructive',
+            });
+            setIsLoading(false);
+            setLoadingModels({});
+            return;
+        }
+
+        if (userPrompt.length > 1000) {
+            toast({
+                title: 'Uh oh! User prompt too long.',
+                description: `Your user prompt is too long. Please keep it under 1000 characters.`,
+                variant: 'destructive',
+            });
+            setIsLoading(false);
+            setLoadingModels({});
+            return;
+        }
     
         try {
             const allResponses = await Promise.all(
@@ -57,6 +117,7 @@ const ModelPlayground: React.FC = () => {
                             models: [model],
                             systemPrompt,
                             userPrompt,
+                            languagePrompt,
                             apiKey: apiKeys[model.provider],
                         }),
                     });
@@ -112,6 +173,8 @@ const ModelPlayground: React.FC = () => {
                     setSystemPrompt={setSystemPrompt}
                     userPrompt={userPrompt}
                     setUserPrompt={setUserPrompt}
+                    languagePrompt={languagePrompt}
+                    setLanguagePrompt={setLanguagePrompt}
                   />
                   <div className="mt-6">
                     <Button className="w-full bg-green-900" onClick={handleRun} disabled={isLoading}>
@@ -133,7 +196,7 @@ const ModelPlayground: React.FC = () => {
                 </div>
                 <div className="mt-4">
                     <h3 className="text-md font-semibold mb-2">Selected Models</h3>
-                    <ScrollArea className="h-[400px] w-full rounded-md border p-4">
+                    <ScrollArea className="h-full min-h-[800px] w-full rounded-md border p-4">
                         {selectedModels.map((model, index) => (
                         <Collapsible key={index} className="mb-4 pb-4 border-b last:border-b-0">
                             <div className="flex justify-between items-center">

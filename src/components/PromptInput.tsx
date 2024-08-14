@@ -6,6 +6,8 @@ interface PromptInputProps {
   setSystemPrompt: React.Dispatch<React.SetStateAction<string>>;
   userPrompt: string;
   setUserPrompt: React.Dispatch<React.SetStateAction<string>>;
+  languagePrompt: string;
+  setLanguagePrompt: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const PromptInput: React.FC<PromptInputProps> = ({
@@ -13,6 +15,8 @@ const PromptInput: React.FC<PromptInputProps> = ({
   setSystemPrompt,
   userPrompt,
   setUserPrompt,
+  languagePrompt,
+  setLanguagePrompt,
 }) => {
   return (
     <div className="space-y-4">
@@ -25,6 +29,18 @@ const PromptInput: React.FC<PromptInputProps> = ({
           value={systemPrompt}
           onChange={(e) => setSystemPrompt(e.target.value)}
           placeholder="Enter system prompt"
+          className="min-h-[100px]"
+        />
+      </div>
+      <div>
+        <label htmlFor="user-prompt" className="block text-sm font-medium text-gray-700 mb-1">
+          Language (Embedded into System)
+        </label>
+        <Textarea
+          id="language-prompt"
+          value={languagePrompt}
+          onChange={(e) => setLanguagePrompt(e.target.value)}
+          placeholder="Enter language prompt"
           className="min-h-[100px]"
         />
       </div>

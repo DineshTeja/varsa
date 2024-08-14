@@ -7,7 +7,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  const { models, systemPrompt, userPrompt, apiKey } = req.body;
+  const { models, systemPrompt, userPrompt, languagePrompt, apiKey } = req.body;
 
   if (!models || !Array.isArray(models) || models.length === 0 || !apiKey) {
     return res.status(400).json({ message: 'Invalid request body' });
@@ -22,7 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const chatResponse = await mistral.chat.complete({
         model: model.id,
         messages: [
-          { role: 'system', content: systemPrompt },
+          { role: 'system', content: `${systemPrompt}\n${languagePrompt}` },
           { role: 'user', content: userPrompt },
         ],
       });

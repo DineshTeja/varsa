@@ -17,8 +17,8 @@ interface ModelResponse {
 }
 
 interface ApiKeys {
-  [key: string]: string;
-}
+    [key: string]: string;
+  }
 
 const ModelPlayground: React.FC = () => {
     const [selectedModels, setSelectedModels] = useState<ModelWithIcon[]>([]);    

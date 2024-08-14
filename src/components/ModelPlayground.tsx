@@ -33,6 +33,7 @@ const ModelPlayground: React.FC = () => {
     const [messages, setMessages] = useState<{ role: string; content: string; isDefault?: boolean }[]>([
         { role: 'system', content: 'You are a helpful assistant.', isDefault: true },
         { role: 'system-language', content: 'You must produce responses in standard American English. Ensure the language, tone, and style are appropriate for this context.', isDefault: true },
+        { role: 'user', content: '', isDefault: true },
     ]);
 
     const handleApiKeysChange = (newApiKeys: ApiKeys) => {

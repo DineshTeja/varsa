@@ -52,12 +52,16 @@ const PromptInput: React.FC<PromptInputProps> = ({
               value={message.content}
               onChange={(e) => handleMessageChange(index, e.target.value)}
               className="min-h-[100px]"
-              placeholder={`Enter ${message.role} message`}
+              placeholder={`Write a poem about cute birds in one paragraph...`}
             />
           </div>
         </div>
       ))}
-      <Button variant="outline" onClick={handleAddMessage}><PlusCircle className="w-4 h-4 mr-2" /> Add Message</Button>
+      <div className="flex justify-end">
+        <Button variant="outline" size="sm" onClick={handleAddMessage}>
+          <PlusCircle className="w-4 h-4 mr-1" /> Add Message
+        </Button>
+      </div>
     </div>
   );
 };

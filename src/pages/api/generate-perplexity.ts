@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import pplx from '@api/pplx';
+import { OpenAI } from 'openai';
 import { PerplexityModel } from '@/lib/types/model';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -13,19 +13,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ message: 'Invalid request body' });
   }
 
+  const perplexityClient = new OpenAI({
+    apiKey,
+    baseURL: "https://api.perplexity.ai",
+  });
+
+  const singleMessage = messages.map((m) => m.content).join("\n");
+
   try {
     const responses = await Promise.all(models.map(async (model: PerplexityModel) => {
-      const { data } = await pplx.post_chat_completions({
+      const start = Date.now();
+      const response = await perplexityClient.chat.completions.create({
         model: model.id,
-        messages: messages.map(msg => ({
-          role: msg.role === 'system-language' ? 'system' : msg.role,
-          content: msg.content
-        })),
+        messages: [
+          {
+            role: "user",
+            content: singleMessage,
+          },
+        ],
       });
+      const end = Date.now();
+
+      if (response.choices[0].message.content === null) {
+        return {
+          model: model.name,
+          response: "Null response received from provider.",
+          error: true,
+          speed: 0,
+        };
+      }
 
       return {
         model: model.name,
-        response: data.choices?.[0]?.message?.content ?? 'No response generated'
+        response: response.choices[0].message.content,
+        error: false,
+        speed: end - start,
       };
     }));
 

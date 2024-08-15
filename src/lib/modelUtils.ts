@@ -1,11 +1,12 @@
 import { OpenAIModel } from './types/model';
 import { AiOutlineOpenAI } from "react-icons/ai";
-import { SiGooglegemini, SiAnthropic, SiPerplexity } from "react-icons/si";
+import { SiGooglegemini, SiAnthropic, SiPerplexity} from "react-icons/si";
 import { IconType } from 'react-icons';
 import { MistralIcon} from './icons/mistral';
 import { TogetherIcon } from './icons/together';
 import { CohereIcon } from './icons/cohere';
 import { GroqIcon } from './icons/groq';
+import { HuggingFaceIcon } from './icons/huggingface';
 
 export interface ModelWithIcon extends OpenAIModel {
   icon: IconType;
@@ -41,6 +42,7 @@ export const availableModels: ModelWithIcon[] = [
   { id: 'cognitivecomputations/dolphin-2.5-mixtral-8x7b', name: '(Together) Dolphin 2.5 Mixtral 8x7B', provider: 'together', icon: TogetherIcon },
   { id: 'databricks/dbrx-instruct', name: '(Together) DBRx Instruct', provider: 'together', icon: TogetherIcon },
   { id: 'deepseek-ai/deepseek-coder-33b-instruct', name: '(Together) DeepSeek Coder 33B Instruct', provider: 'together', icon: TogetherIcon },
+  { id: 'sarvam-2b', name: '(Hugging Face) Sarvam 2B-v0.5 Beta (Preview)', icon: HuggingFaceIcon, provider: 'huggingface-sarvam' },
 ];
 
 export const providerIcons: { [key: string]: { icon: IconType; displayName: string } } = {
@@ -52,4 +54,5 @@ export const providerIcons: { [key: string]: { icon: IconType; displayName: stri
   mistral: { icon: MistralIcon, displayName: 'Mistral' },
   cohere: { icon: CohereIcon, displayName: 'Cohere' },
   google: { icon: SiGooglegemini, displayName: 'Google Gemini' },
+  "huggingface-sarvam": { icon: HuggingFaceIcon, displayName: 'Hugging Face' },
 };

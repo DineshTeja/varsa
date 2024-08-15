@@ -28,7 +28,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ selectedModels, setSelect
               Add model for evaluation
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
+          <DropdownMenuContent className="max-h-[500px] overflow-y-scroll w-[--radix-dropdown-menu-trigger-width]">
             {models.map(model => {
               const isDisabled = !apiKeys[model.provider] || selectedModels.some(m => m.id === model.id);
               return (

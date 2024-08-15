@@ -160,47 +160,37 @@ const ModelPlayground: React.FC = () => {
 
     return (
         <div className="w-full min-h-screen bg-white shadow-md rounded-lg p-6">
-          <div className="grid grid-cols-3 gap-6">
-            <div className="col-span-2">
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <h2 className="text-lg font-semibold mb-2">API Keys</h2>
-                  <h3 className="text-sm text-gray-500 mb-2">You can paste an .env file or enter them manually. These are not persisted anywhere, even on refresh!</h3>
-                  <ApiKeyInput onApiKeysChange={handleApiKeysChange} />
-                </div>
-                <div className="flex flex-col justify-between">
-                  <div>
-                    <h2 className="text-lg font-semibold mb-4">Prompts</h2>
-                    {/* <PromptInput
-                      systemPrompt={systemPrompt}
-                      setSystemPrompt={setSystemPrompt}
-                      userPrompt={userPrompt}
-                      setUserPrompt={setUserPrompt}
-                      languagePrompt={languagePrompt}
-                      setLanguagePrompt={setLanguagePrompt}
-                    /> */}
-                    <PromptInput
-                        messages={messages}
-                        setMessages={setMessages}
-                    />
-                  </div>
-                  <div className="mt-6">
-                    <Button className="w-full bg-green-900" onClick={handleRun} disabled={isLoading}>
-                      {isLoading ? 'Generating...' : 'Run'}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <div className="grid grid-cols-5 gap-6">
             <div className="col-span-1">
-              <h2 className="text-lg font-semibold mb-4">Models</h2>
+                <h2 className="text-lg font-semibold mb-2">API Keys</h2>
+                <h3 className="text-sm text-gray-500 mb-2">You can paste an .env file or enter them manually. These are not persisted anywhere, even on refresh!</h3>
+                <ApiKeyInput onApiKeysChange={handleApiKeysChange} />
+            </div>
+            <div className="col-span-2">
+                <div className="flex flex-col justify-between">
+                <div>
+                    <h2 className="text-lg font-semibold mb-4">Prompts</h2>
+                    <PromptInput
+                    messages={messages}
+                    setMessages={setMessages}
+                    />
+                </div>
+                <div className="mt-6">
+                    <Button className="w-full bg-green-900" onClick={handleRun} disabled={isLoading}>
+                    {isLoading ? 'Generating...' : 'Run'}
+                    </Button>
+                </div>
+                </div>
+            </div>
+            <div className="col-span-2">
+                <h2 className="text-lg font-semibold mb-4">Models</h2>
                 <div className="w-full">
-                    <ModelSelector
+                <ModelSelector
                     selectedModels={selectedModels}
                     setSelectedModels={setSelectedModels}
                     models={availableModels}
                     apiKeys={apiKeys}
-                    />
+                />
                 </div>
                 <div className="mt-4">
                     <h3 className="text-md font-semibold mb-2">Selected Models</h3>

@@ -211,7 +211,7 @@ const ModelPlayground: React.FC = () => {
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-lg font-semibold">Prompts</h2>
                                 <Button 
-                                    className="bg-green-900 text-white hover:bg-green-800 border-green-800 px-6 text-md"
+                                    className="bg-green-900 text-white hover:bg-green-800 border-green-800 px-3 text-sm"
                                     onClick={handleRun} 
                                     disabled={isLoading}
                                 >

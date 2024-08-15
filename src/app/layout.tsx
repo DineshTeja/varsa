@@ -17,6 +17,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8" />
+      </head>
       <body className={`${inter.className} bg-gray-100`}>
         <div className="md:hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-100 bg-opacity-90 text-green-900 p-4">
           <div className="text-center">

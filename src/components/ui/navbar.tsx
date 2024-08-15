@@ -6,9 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Switch } from "@/components/ui/switch";
 import { useState, useEffect } from 'react';
 import { Label } from "@/components/ui/label";
-import AnimatedGradientText from "@/components/magicui/animated-gradient-text";
-import { ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -36,11 +34,23 @@ export default function Navbar() {
         </Link>
       </div>
       <div className="flex justify-center">
-        <div className="px-4 py-2 bg-green-50 rounded-full text-sm text-green-800 flex items-center">
-          🎉 <hr className="mx-2 h-4 w-[1px] shadow-none shrink-0 bg-gray-300" />{" "}
-          <span className="font-medium">New:</span>
-          <span className="ml-1">We now support prompt caching on Claude 3.5 Sonnet</span>
-        </div>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="px-2 sm:px-4 py-2 bg-green-50 rounded-full text-xs sm:text-sm text-green-800 flex items-center max-w-full overflow-hidden">
+                <span className="flex-shrink-0">🎉</span>
+                <hr className="mx-2 h-4 w-[1px] shadow-none shrink-0 bg-gray-300 hidden sm:block" />
+                <span className="font-medium flex-shrink-0 hidden sm:inline">New:</span>
+                <span className="ml-1 truncate">
+                  We now support prompt caching on Claude 3.5 Sonnet
+                </span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>We now support prompt caching on Claude 3.5 Sonnet</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
       <div className="flex items-center justify-end space-x-2 p-2 rounded-lg">
         <Label htmlFor="playground-mode" className={`text-sm ${isPlayground ? "text-gray-600" : "text-green-800 font-medium"}`}>

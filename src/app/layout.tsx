@@ -18,7 +18,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} bg-gray-100`}>
-        {children}
+        <div className="md:hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-100 bg-opacity-90 text-green-900 p-4">
+          <div className="text-center">
+          <h2 className="text-4xl font-thin font-serif text-green-800 mb-3">varsa</h2>
+            <p className="text-md mx-3">Unfortunately, this site is optimized for larger screens. Please use a tablet or desktop device to access varsa&apos;s model playground.</p>
+          </div>
+        </div>
+        <div className="hidden md:block">
+          {children}
+        </div>
         <Toaster />
       </body>
     </html>

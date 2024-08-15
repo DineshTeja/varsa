@@ -201,7 +201,7 @@ const ModelPlayground: React.FC = () => {
         <div className="w-full h-[1100px] bg-white shadow-sm rounded-lg p-6 flex flex-col">
             <div className="grid grid-cols-5 gap-6 flex-grow overflow-hidden">
                 <div className="col-span-1 max-h-[1100px] overflow-y-scroll" ref={apiKeyColumnRef}>
-                    <h2 className="text-lg font-semibold mb-2">API Keys</h2>
+                    <h2 className="text-lg font-semibold mb-2">API Keys & Tokens</h2>
                     <h3 className="text-sm text-gray-500 mb-2">You can paste an .env file or enter them manually. These are not persisted anywhere, even on refresh!</h3>
                     <ApiKeyInput ref={apiKeyColumnRef} onApiKeysChange={handleApiKeysChange} />
                 </div>
@@ -225,7 +225,7 @@ const ModelPlayground: React.FC = () => {
                         </div>
                     </div>
                 </div>
-                <div className="col-span-2 max-h-[1100px] overflow-y-scroll">
+                <div className="col-span-2 px-2 max-h-[1100px] overflow-y-scroll">
                     <h2 className="text-lg font-semibold mb-4">Models</h2>
                     <div className="w-full mb-4">
                         <ModelSelector

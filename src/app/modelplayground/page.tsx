@@ -6,12 +6,11 @@ import ModelPlayground from '@/components/ModelPlayground';
 
 export default function PlaygroundPage() {
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       <Navbar />
-      <div className="flex flex-col items-center justify-start min-h-screen bg-gray-100 p-4">
-        {/* <h1 className="text-4xl font-thin mb-8 text-green-800 subpixel-antialiased font-serif">Model Playground</h1> */}
+      <div className="flex-grow flex flex-col items-center justify-start px-4 pb-8">
         <ModelPlayground />
       </div>
-    </>
+    </div>
   );
 }

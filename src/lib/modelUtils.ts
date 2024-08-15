@@ -11,6 +11,7 @@ import { HuggingFaceIcon } from './icons/huggingface';
 export interface ModelWithIcon extends OpenAIModel {
   icon: IconType;
   provider: string;
+  cacheControl?: boolean;
 }
 
 export const availableModels: ModelWithIcon[] = [
@@ -18,8 +19,9 @@ export const availableModels: ModelWithIcon[] = [
   { id: 'gpt-4o-mini', name: 'GPT-4o Mini', icon: AiOutlineOpenAI, provider: 'openai'},
   { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', icon: AiOutlineOpenAI, provider: 'openai'},
   { id: 'gpt-4', name: 'GPT-4 (Legacy Model)', icon: AiOutlineOpenAI, provider: 'openai'},
+  { id: 'claude-3-5-sonnet-20240620', name: 'Claude 3.5 Sonnet', icon: SiAnthropic, provider: 'anthropic', cacheControl: true },
   { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', icon: SiAnthropic, provider: 'anthropic'},
-  { id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet', icon: SiAnthropic, provider: 'anthropic'},
+  { id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet (Legacy Model)', icon: SiAnthropic, provider: 'anthropic' },
   { id: 'open-mistral-7b', name: 'Mistral 7B', provider: 'mistral', icon: MistralIcon },
   { id: 'open-mistral-8x7b', name: 'Mistral 8x7B', provider: 'mistral', icon: MistralIcon },
   { id: 'mistral-tiny', name: 'Mistral Tiny', provider: 'mistral', icon: MistralIcon },

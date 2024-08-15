@@ -1,20 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ApiKeyInput from '@/components/ApiKeyInput';
 import ModelSelector from '@/components/ModelSelector';
 import PromptInput from '@/components/PromptInput';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp, Minus, Box, Info } from "lucide-react";
+import { ChevronDown, ChevronUp, Minus, Bot, Play } from "lucide-react";
 import { availableModels, ModelWithIcon } from '@/lib/modelUtils';
 import { useToast } from '@/components/ui/use-toast';
+import { Switch } from '@/components/ui/switch';
 
 interface ModelResponse {
     model: string;
     response: string;
     responseTime: number;
+    error?: boolean;
 }
 
 interface ApiKeys {
@@ -29,6 +31,8 @@ const ModelPlayground: React.FC = () => {
     const [openCollapsibles, setOpenCollapsibles] = useState<{ [key: string]: boolean }>({});
     const [loadingModels, setLoadingModels] = useState<{ [key: string]: boolean }>({});
     const [apiKeys, setApiKeys] = useState<ApiKeys>({});
+    const [cacheControl, setCacheControl] = useState<{ [key: string]: boolean }>({});
+    const apiKeyColumnRef = useRef<HTMLDivElement>(null);
 
     const [messages, setMessages] = useState<{ role: string; content: string; isDefault?: boolean }[]>([
         { role: 'system', content: 'You are a helpful assistant.', isDefault: true },
@@ -39,6 +43,10 @@ const ModelPlayground: React.FC = () => {
     const handleApiKeysChange = (newApiKeys: ApiKeys) => {
         setApiKeys(newApiKeys);
     };
+
+    const estimateTokens = (text: string): number => {
+        return Math.ceil(text.length / 4);
+      };
 
     const handleRun = async () => {
         setIsLoading(true);
@@ -107,41 +115,65 @@ const ModelPlayground: React.FC = () => {
             setLoadingModels({});
             return;
         }
+
+        const systemMessages = messages.filter(message => message.role === 'system' || message.role === 'system-language');
+        const totalSystemTokens = systemMessages.reduce((sum, message) => sum + estimateTokens(message.content), 0);
+    
+        if (totalSystemTokens < 1024 && Object.values(cacheControl).some(value => value)) {
+          toast({
+            title: 'Insufficient system message length for cache control usage',
+            description: 'For models with cache control, system messages should add up to at least 1024 tokens (approximately 4096 characters).',
+            variant: 'destructive',
+          });
+          setIsLoading(false);
+          setLoadingModels({});
+          return;
+        }
     
         try {
             const allResponses = await Promise.all(
                 selectedModels.map(async (model) => {
                     const startTime = Date.now();
-                    const res = await fetch(`/api/generate-${model.provider}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            models: [model],
-                            messages,
-                            apiKey: apiKeys[model.provider],
-                        }),
-                    });
+                    try {
+                        const res = await fetch(`/api/generate-${model.provider}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                models: [{
+                                    ...model,
+                                    cacheControl: cacheControl[model.id] || false
+                                }],
+                                messages,
+                                apiKey: apiKeys[model.provider],
+                            }),
+                        });
     
-                    if (!res.ok) {
-                        throw new Error(`Failed to generate response for ${model.name}`);
+                        if (!res.ok) {
+                            throw new Error(`Failed to generate response for ${model.name} [${res.statusText}]`);
+                        }
+    
+                        const data = await res.json();
+                        const response = data.responses[0];
+                        return {
+                            ...response,
+                            responseTime: Date.now() - startTime,
+                            error: false,
+                        };
+                    } catch (error) {
+                        console.error(`Error generating response for ${model.name}:`, error);
+                        return {
+                            model: model.name,
+                            response: `${String(error)}`,
+                            responseTime: Date.now() - startTime,
+                            error: true,
+                        };
                     }
-    
-                    const data = await res.json();
-                    const endTime = Date.now();
-                    const response = data.responses[0];
-                    return {
-                        ...response,
-                        responseTime: endTime - startTime,
-                    };
                 })
             );
     
             setResponses(allResponses);
-            allResponses.forEach((response: ModelResponse) => {
-                setLoadingModels(prev => ({ ...prev, [response.model]: false }));
-            });
         } catch (error) {
             console.error('Error generating response:', error);
             setResponses([{ model: 'Error', response: 'An error occurred while generating the response.', responseTime: 0 }]);
@@ -158,111 +190,139 @@ const ModelPlayground: React.FC = () => {
         }));
     };
 
+    const handleCacheControlToggle = (modelId: string) => {
+        setCacheControl(prev => ({
+          ...prev,
+          [modelId]: !prev[modelId]
+        }));
+      };
+
     return (
-        <div className="w-full min-h-screen bg-white shadow-md rounded-lg p-6">
-            <div className="grid grid-cols-5 gap-6">
-            <div className="col-span-1">
-                <h2 className="text-lg font-semibold mb-2">API Keys</h2>
-                <h3 className="text-sm text-gray-500 mb-2">You can paste an .env file or enter them manually. These are not persisted anywhere, even on refresh!</h3>
-                <ApiKeyInput onApiKeysChange={handleApiKeysChange} />
-            </div>
-            <div className="col-span-2">
-                <div className="flex flex-col justify-between">
-                <div>
-                    <h2 className="text-lg font-semibold mb-4">Prompts</h2>
-                    <PromptInput
-                    messages={messages}
-                    setMessages={setMessages}
-                    />
+        <div className="w-full h-[1100px] bg-white shadow-sm rounded-lg p-6 flex flex-col">
+            <div className="grid grid-cols-5 gap-6 flex-grow overflow-hidden">
+                <div className="col-span-1 max-h-[1100px] overflow-y-scroll" ref={apiKeyColumnRef}>
+                    <h2 className="text-lg font-semibold mb-2">API Keys</h2>
+                    <h3 className="text-sm text-gray-500 mb-2">You can paste an .env file or enter them manually. These are not persisted anywhere, even on refresh!</h3>
+                    <ApiKeyInput ref={apiKeyColumnRef} onApiKeysChange={handleApiKeysChange} />
                 </div>
-                <div className="mt-6">
-                    <Button className="w-full bg-green-900" onClick={handleRun} disabled={isLoading}>
-                    {isLoading ? 'Generating...' : 'Run'}
-                    </Button>
+                <div className="col-span-2 max-h-[1100px] overflow-y-scroll">
+                    <div className="flex flex-col h-full">
+                        <div className="flex-grow">
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-lg font-semibold">Prompts</h2>
+                                <Button 
+                                    className="bg-green-900 text-white hover:bg-green-800 border-green-800 px-6 text-md"
+                                    onClick={handleRun} 
+                                    disabled={isLoading}
+                                >
+                                   <Play className="mr-2 w-4 h-4" /> {isLoading ? 'Running...' : 'Run'}
+                                </Button>
+                            </div>
+                            <PromptInput
+                                messages={messages}
+                                setMessages={setMessages}
+                            />
+                        </div>
+                    </div>
                 </div>
-                </div>
-            </div>
-            <div className="col-span-2">
-                <h2 className="text-lg font-semibold mb-4">Models</h2>
-                <div className="w-full">
-                <ModelSelector
-                    selectedModels={selectedModels}
-                    setSelectedModels={setSelectedModels}
-                    models={availableModels}
-                    apiKeys={apiKeys}
-                />
-                </div>
+                <div className="col-span-2 max-h-[1100px] overflow-y-scroll">
+                    <h2 className="text-lg font-semibold mb-4">Models</h2>
+                    <div className="w-full mb-4">
+                        <ModelSelector
+                            selectedModels={selectedModels}
+                            setSelectedModels={setSelectedModels}
+                            models={availableModels}
+                            apiKeys={apiKeys}
+                        />
+                    </div>
                 <div className="mt-4">
                     <h3 className="text-md font-semibold mb-2">Selected Models</h3>
                     <ScrollArea className="h-full min-h-[800px] w-full rounded-md border p-4">
                         {selectedModels.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-full text-gray-400 mt-20">
-                                <Box className="w-12 h-12 mb-3 stroke-current" />
-                                <p className="text-base font-medium mb-1">No models selected</p>
-                                <div className="flex items-center text-sm">
-                                    <span>Choose models from the selector above</span>
-                                </div>
+                            <div className="flex flex-col items-center justify-center h-full text-gray-500 mt-20">
+                                <Bot className="w-16 h-16 mb-4 stroke-current opacity-50" />
+                                <p className="text-lg font-semibold mb-2">No models selected</p>
+                                <p className="text-sm text-gray-400 text-center max-w-xs">
+                                    Choose models from the selector above to compare their responses
+                                </p>
                             </div>
                         ) : (
                             selectedModels.map((model, index) => (
                                 <Collapsible key={index} className="mb-4 pb-4 border-b last:border-b-0">
-                                    <div className="flex justify-between items-center">
-                                    <div className="flex items-center">
-                                         <model.icon className="mr-2 h-4 w-4" />
-                                        <h4 className="font-semibold">{model.name}</h4>
-                                        {loadingModels[model.id] && (
-                                            <svg className="animate-spin ml-2 h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                        )}
-                                        {!loadingModels[model.id] && responses.find(r => r.model === model.name) && (
-                                            <div className="flex items-center ml-2">
-                                                <svg className="h-4 w-4 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                </svg>
-                                                <span className="text-xs text-gray-500 ml-1">
-                                                    {(responses.find(r => r.model === model.name)?.responseTime ?? 0) / 1000}s
-                                                </span>
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex flex-col">
+                                            <div className="flex items-center">
+                                                <model.icon className="mr-2 h-4 w-4" />
+                                                <h4 className="font-semibold">{model.name}</h4>
                                             </div>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center">
-                                        <CollapsibleTrigger asChild onClick={() => toggleCollapsible(model.id)}>
-                                            <Button variant="ghost" size="sm">
-                                                {openCollapsibles[model.id] ? (
-                                                <ChevronUp className="h-4 w-4" />
-                                                ) : (
-                                                <ChevronDown className="h-4 w-4" />
-                                                )}
+                                            {model.provider === 'anthropic' && model.cacheControl && (
+                                                <div className="flex items-center ml-6 mt-2">
+                                                    <Switch
+                                                        checked={cacheControl[model.id] || false}
+                                                        onCheckedChange={() => handleCacheControlToggle(model.id)}
+                                                    />
+                                                    <span className="text-sm text-gray-500 ml-2">Cache Control</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center">
+                                            {loadingModels[model.id] && (
+                                                <svg className="animate-spin mr-2 h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                            )}
+                                            {!loadingModels[model.id] && responses.find(r => r.model === model.name) && (
+                                                <div className="flex items-center mr-2">
+                                                    {responses.find(r => r.model === model.name)?.error ? (
+                                                        <svg className="h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                        </svg>
+                                                    ) : (
+                                                        <svg className="h-4 w-4 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                        </svg>
+                                                    )}
+                                                    <span className="text-xs text-gray-500 ml-1">
+                                                        {(responses.find(r => r.model === model.name)?.responseTime ?? 0) / 1000}s
+                                                    </span>
+                                                </div>
+                                            )}
+                                            <CollapsibleTrigger asChild onClick={() => toggleCollapsible(model.id)}>
+                                                <Button variant="ghost" size="sm">
+                                                    {openCollapsibles[model.id] ? (
+                                                        <ChevronUp className="h-4 w-4" />
+                                                    ) : (
+                                                        <ChevronDown className="h-4 w-4" />
+                                                    )}
+                                                </Button>
+                                            </CollapsibleTrigger>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setSelectedModels(prev => prev.filter(m => m.id !== model.id));
+                                                    setResponses(prev => prev.filter(r => r.model !== model.name));
+                                                    setLoadingModels(prev => {
+                                                        const newLoadingModels = { ...prev };
+                                                        delete newLoadingModels[model.id];
+                                                        return newLoadingModels;
+                                                    });
+                                                }}
+                                                className="hover:bg-red-100 text-red-500"
+                                            >
+                                                <Minus className="h-4 w-4" />
                                             </Button>
-                                        </CollapsibleTrigger>
-                                        <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => {
-                                            setSelectedModels(prev => prev.filter(m => m.id !== model.id));
-                                            setResponses(prev => prev.filter(r => r.model !== model.name));
-                                            setLoadingModels(prev => {
-                                            const newLoadingModels = { ...prev };
-                                            delete newLoadingModels[model.id];
-                                            return newLoadingModels;
-                                            });
-                                        }}
-                                        className="hover:bg-red-100 text-red-500"
-                                        >
-                                        <Minus className="h-4 w-4" />
-                                        </Button>
-                                    </div>
+                                        </div>
                                     </div>
                                     <CollapsibleContent>
-                                    {responses.find(r => r.model === model.name) ? (
-                                        <pre className="whitespace-pre-wrap mt-2 text-sm">
-                                        {responses.find(r => r.model === model.name)?.response}
-                                        </pre>
-                                    ) : (
-                                        <p className="mt-2 text-sm text-gray-500">No response generated yet.</p>
-                                    )}
+                                        {responses.find(r => r.model === model.name) ? (
+                                            <pre className={`whitespace-pre-wrap mt-2 text-sm ${responses.find(r => r.model === model.name)?.error ? 'text-red-500' : ''}`}>
+                                                {responses.find(r => r.model === model.name)?.response}
+                                            </pre>
+                                        ) : (
+                                            <p className="mt-2 text-sm text-gray-500">No response generated yet.</p>
+                                        )}
                                     </CollapsibleContent>
                                 </Collapsible>
                             ))

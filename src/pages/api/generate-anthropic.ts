@@ -1,6 +1,11 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import Anthropic from '@anthropic-ai/sdk';
 import { AnthropicModel } from '@/lib/types/model';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import path from 'path';
+
+const execAsync = promisify(exec);
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -18,31 +23,55 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   });
 
   try {
+    await execAsync('pip install anthropic');
+
     const responses = await Promise.all(models.map(async (model: AnthropicModel) => {
       const systemMessage = messages.find(msg => msg.role === 'system' || msg.role === 'system-language');
       const userMessages = messages.filter(msg => msg.role !== 'system' && msg.role !== 'system-language');
 
-      const message = await anthropic.messages.create({
-        model: model.id,
-        max_tokens: 1024,
-        system: systemMessage ? systemMessage.content : '',
-        messages: userMessages.map(msg => ({
-          role: msg.role,
-          content: msg.content
-        }))
-      });
+      if (model.cacheControl) {
+        const scriptPath = path.join(process.cwd(), 'src', 'app', 'scripts', 'anthropic-cache-control-beta.py');
+        const encodedSystemMessage = Buffer.from(systemMessage?.content || '').toString('base64');
+        const encodedUserMessages = Buffer.from(JSON.stringify(userMessages)).toString('base64');
+        const command = `python3 "${scriptPath}" "${apiKey}" "${model.id}" "${encodedSystemMessage}" "${encodedUserMessages}"`;
 
-      return {
-        model: model.name,
-        response: message.content[0].type === 'text' 
-          ? message.content[0].text 
-          : 'No text response generated'
-      };
+        const { stdout, stderr } = await execAsync(command);
+        if (stderr) {
+          console.error('Python script error:', stderr);
+          throw new Error(stderr);
+        }
+        return {
+          model: model.name,
+          response: stdout.trim()
+        };
+      } else {
+        const messageParams: Anthropic.MessageCreateParams = {
+          model: model.id,
+          max_tokens: 1024,
+          messages: userMessages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          }))
+        };
+
+        if (systemMessage) {
+          messageParams.system = systemMessage.content;
+        }
+
+        const message = await anthropic.messages.create(messageParams);
+
+        return {
+          model: model.name,
+          response: message.content[0].type === 'text' 
+            ? message.content[0].text 
+            : 'No text response generated'
+        };
+      }
     }));
 
     return res.status(200).json({ responses });
   } catch (error) {
     console.error('Error generating response:', error);
-    return res.status(500).json({ message: 'Error generating response' });
+    return res.status(500).json({ message: 'Error generating response', error: String(error) });
   }
 }

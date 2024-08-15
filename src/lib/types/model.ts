@@ -6,6 +6,7 @@ export interface OpenAIModel {
 export interface AnthropicModel {
     id: string;
     name: string;
+    cacheControl?: boolean;
   }
 
 export interface MistralModel {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { providerIcons } from '@/lib/modelUtils';
 import { useToast } from "@/components/ui/use-toast"
@@ -11,7 +11,7 @@ interface ApiKeyInputProps {
   onApiKeysChange: (apiKeys: ApiKeys) => void;
 }
 
-export default function ApiKeyInput({ onApiKeysChange }: ApiKeyInputProps) {
+const ApiKeyInput = forwardRef<HTMLDivElement, ApiKeyInputProps>(({ onApiKeysChange }, ref) => {
   const { toast } = useToast()
 
   const [apiKeys, setApiKeys] = useState<ApiKeys>(
@@ -21,46 +21,41 @@ export default function ApiKeyInput({ onApiKeysChange }: ApiKeyInputProps) {
     }, {} as ApiKeys)
   );
 
-  useEffect(() => {
-    const handlePaste = async (e: ClipboardEvent) => {
-      const text = e.clipboardData?.getData('text');
-      if (text) {
-        e.preventDefault();
-        const lines = text.split('\n');
-        const newApiKeys = { ...apiKeys };
-        let isValid = true;
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const text = e.clipboardData.getData('text');
+    if (text) {
+      e.preventDefault();
+      const lines = text.split('\n');
+      const newApiKeys = { ...apiKeys };
+      let isValid = true;
 
-        lines.forEach(line => {
-          const [key, value] = line.split('=');
-          if (key && value) {
-            if (key.endsWith('_API_KEY')) {
-              const provider = key.replace('_API_KEY', '').toLowerCase();
-              if (provider in newApiKeys) {
-                newApiKeys[provider] = value.trim().replace(/^["']|["']$/g, '');
-              }
-            } else {
-              isValid = false;
+      lines.forEach(line => {
+        const [key, value] = line.split('=');
+        if (key && value) {
+          if (key.endsWith('_API_KEY')) {
+            const provider = key.replace('_API_KEY', '').toLowerCase();
+            if (provider in newApiKeys) {
+              newApiKeys[provider] = value.trim().replace(/^["']|["']$/g, '');
             }
+          } else {
+            isValid = false;
           }
-        });
-
-        if (!isValid) {
-          toast({
-            title: "Error",
-            description: "Invalid environment file. All variables should be in the format ____API_KEY.",
-            variant: "destructive",
-          });
-          return;
         }
+      });
 
-        setApiKeys(newApiKeys);
-        onApiKeysChange(newApiKeys);
+      if (!isValid) {
+        toast({
+          title: "Error",
+          description: "Invalid environment file. All variables should be in the format ____API_KEY.",
+          variant: "destructive",
+        });
+        return;
       }
-    };
 
-    document.addEventListener('paste', handlePaste);
-    return () => document.removeEventListener('paste', handlePaste);
-  }, [apiKeys, onApiKeysChange]);
+      setApiKeys(newApiKeys);
+      onApiKeysChange(newApiKeys);
+    }
+  };
 
   const handleApiKeyChange = (provider: string, value: string) => {
     const newApiKeys = { ...apiKeys, [provider]: value };
@@ -69,7 +64,7 @@ export default function ApiKeyInput({ onApiKeysChange }: ApiKeyInputProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div ref={ref} className="space-y-4 p-2" onPaste={handlePaste}>
       {Object.entries(providerIcons).map(([provider, { icon: Icon, displayName }]) => (
         <div key={provider} className="flex items-center">
           <Icon className="mr-2 h-5 w-5" />
@@ -84,4 +79,8 @@ export default function ApiKeyInput({ onApiKeysChange }: ApiKeyInputProps) {
       ))}
     </div>
   );
-};
+});
+
+ApiKeyInput.displayName = 'ApiKeyInput';
+
+export default ApiKeyInput;

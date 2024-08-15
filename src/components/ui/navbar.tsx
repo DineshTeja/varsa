@@ -6,6 +6,9 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Switch } from "@/components/ui/switch";
 import { useState, useEffect } from 'react';
 import { Label } from "@/components/ui/label";
+import AnimatedGradientText from "@/components/magicui/animated-gradient-text";
+import { ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -26,22 +29,30 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="flex items-center justify-between p-4 bg-white shadow-sm">
+    <nav className="grid grid-cols-3 items-center p-4 shadow-sm rounded-lg bg-white mx-4 my-4">
       <div className="flex items-center">
         <Link href="/example" className="flex items-center">
           <h2 className="text-2xl font-thin font-serif text-green-800">varsa</h2>
         </Link>
       </div>
-      <div className="flex items-center space-x-2">
-        <Label htmlFor="playground-mode" className={isPlayground ? "text-gray-600" : ""}>
+      <div className="flex justify-center">
+        <div className="px-4 py-2 bg-green-50 rounded-full text-sm text-green-800 flex items-center">
+          🎉 <hr className="mx-2 h-4 w-[1px] shadow-none shrink-0 bg-gray-300" />{" "}
+          <span className="font-medium">New:</span>
+          <span className="ml-1">We now support prompt caching on Claude 3.5 Sonnet</span>
+        </div>
+      </div>
+      <div className="flex items-center justify-end space-x-2 p-2 rounded-lg">
+        <Label htmlFor="playground-mode" className={`text-sm ${isPlayground ? "text-gray-600" : "text-green-800 font-medium"}`}>
           Example
         </Label>
         <Switch
           id="playground-mode"
           checked={isPlayground}
           onCheckedChange={handleSwitchChange}
+          className="data-[state=checked]:bg-green-800"
         />
-        <Label htmlFor="example-mode" className={isPlayground ? "" : "text-gray-600"}>
+        <Label htmlFor="example-mode" className={`text-sm ${isPlayground ? "text-green-800 font-medium" : "text-gray-600"}`}>
           Playground
         </Label>
       </div>

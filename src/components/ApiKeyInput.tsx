@@ -21,46 +21,46 @@ export default function ApiKeyInput({ onApiKeysChange }: ApiKeyInputProps) {
     }, {} as ApiKeys)
   );
 
-  // useEffect(() => {
-  //   const handlePaste = async (e: ClipboardEvent) => {
-  //     const text = e.clipboardData?.getData('text');
-  //     if (text) {
-  //       e.preventDefault();
-  //       const lines = text.split('\n');
-  //       const newApiKeys = { ...apiKeys };
-  //       let isValid = true;
+  useEffect(() => {
+    const handlePaste = async (e: ClipboardEvent) => {
+      const text = e.clipboardData?.getData('text');
+      if (text) {
+        e.preventDefault();
+        const lines = text.split('\n');
+        const newApiKeys = { ...apiKeys };
+        let isValid = true;
 
-  //       lines.forEach(line => {
-  //         const [key, value] = line.split('=');
-  //         if (key && value) {
-  //           if (key.endsWith('_API_KEY')) {
-  //             const provider = key.replace('_API_KEY', '').toLowerCase();
-  //             if (provider in newApiKeys) {
-  //               newApiKeys[provider] = value.trim().replace(/^["']|["']$/g, '');
-  //             }
-  //           } else {
-  //             isValid = false;
-  //           }
-  //         }
-  //       });
+        lines.forEach(line => {
+          const [key, value] = line.split('=');
+          if (key && value) {
+            if (key.endsWith('_API_KEY')) {
+              const provider = key.replace('_API_KEY', '').toLowerCase();
+              if (provider in newApiKeys) {
+                newApiKeys[provider] = value.trim().replace(/^["']|["']$/g, '');
+              }
+            } else {
+              isValid = false;
+            }
+          }
+        });
 
-  //       if (!isValid) {
-  //         toast({
-  //           title: "Error",
-  //           description: "Invalid environment file. All variables should be in the format ____API_KEY.",
-  //           variant: "destructive",
-  //         });
-  //         return;
-  //       }
+        if (!isValid) {
+          toast({
+            title: "Error",
+            description: "Invalid environment file. All variables should be in the format ____API_KEY.",
+            variant: "destructive",
+          });
+          return;
+        }
 
-  //       setApiKeys(newApiKeys);
-  //       onApiKeysChange(newApiKeys);
-  //     }
-  //   };
+        setApiKeys(newApiKeys);
+        onApiKeysChange(newApiKeys);
+      }
+    };
 
-  //   document.addEventListener('paste', handlePaste);
-  //   return () => document.removeEventListener('paste', handlePaste);
-  // }, [apiKeys, onApiKeysChange]);
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [apiKeys, onApiKeysChange]);
 
   const handleApiKeyChange = (provider: string, value: string) => {
     const newApiKeys = { ...apiKeys, [provider]: value };

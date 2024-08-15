@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ApiKeyInput from '@/components/ApiKeyInput';
@@ -23,6 +23,22 @@ interface ApiKeys {
     [key: string]: string;
   }
 
+interface Message {
+    role: string;
+    content: string;
+    isDefault?: boolean;
+    attachments?: Array<{
+      type: 'url' | 'pdf';
+      content: string;
+      extractedData?: {
+        title: string;
+        cleaned_text: string;
+        type: string;
+      };
+    }>;
+  }
+
+  
 const ModelPlayground: React.FC = () => {
     const { toast } = useToast();
     const [selectedModels, setSelectedModels] = useState<ModelWithIcon[]>([]);    
@@ -31,14 +47,49 @@ const ModelPlayground: React.FC = () => {
     const [openCollapsibles, setOpenCollapsibles] = useState<{ [key: string]: boolean }>({});
     const [loadingModels, setLoadingModels] = useState<{ [key: string]: boolean }>({});
     const [apiKeys, setApiKeys] = useState<ApiKeys>({});
-    const [cacheControl, setCacheControl] = useState<{ [key: string]: boolean }>({});
     const apiKeyColumnRef = useRef<HTMLDivElement>(null);
 
-    const [messages, setMessages] = useState<{ role: string; content: string; isDefault?: boolean }[]>([
-        { role: 'system', content: 'You are a helpful assistant.', isDefault: true },
-        { role: 'system-language', content: 'You must produce responses in standard American English. Ensure the language, tone, and style are appropriate for this context.', isDefault: true },
-        { role: 'user', content: '', isDefault: true },
-    ]);
+    const [cacheControl, setCacheControl] = useState<{ [key: string]: boolean }>({});
+
+    const getInitialMessages = () => {
+        const baseMessages = [
+            { role: 'system', content: 'You are a helpful assistant.', isDefault: true },
+            { role: 'system-language', content: 'You must produce responses in standard American English. Ensure the language, tone, and style are appropriate for this context.', isDefault: true },
+            { role: 'user', content: '', isDefault: true },
+        ];
+
+        if (Object.values(cacheControl).some(value => value)) {
+            baseMessages.splice(2, 0, {
+                role: 'system-anthropic-cache',
+                content: 'Here are a few attachments about birds that you should use as context/knowledge for this conversation.',
+                isDefault: true
+            });
+        }
+
+        return baseMessages;
+    };
+
+    const [messages, setMessages] = useState<Message[]>(getInitialMessages);
+
+    useEffect(() => {
+        setMessages(prevMessages => {
+            const systemMessages = prevMessages.filter(msg => msg.role.startsWith('system'));
+            const nonSystemMessages = prevMessages.filter(msg => !msg.role.startsWith('system'));
+            
+            const updatedSystemMessages = [
+                ...systemMessages.filter(msg => msg.role !== 'system-anthropic-cache'),
+                ...(Object.values(cacheControl).some(value => value)
+                    ? [{
+                        role: 'system-anthropic-cache',
+                        content: 'Here are a few attachments about birds that you should use as context/knowledge for this conversation.',
+                        isDefault: true
+                    }]
+                    : [])
+            ];
+
+            return [...updatedSystemMessages, ...nonSystemMessages];
+        });
+    }, [cacheControl]);
 
     const handleApiKeysChange = (newApiKeys: ApiKeys) => {
         setApiKeys(newApiKeys);
@@ -116,12 +167,27 @@ const ModelPlayground: React.FC = () => {
             return;
         }
 
-        const systemMessages = messages.filter(message => message.role === 'system' || message.role === 'system-language');
-        const totalSystemTokens = systemMessages.reduce((sum, message) => sum + estimateTokens(message.content), 0);
+        const systemMessages = messages.filter(message => 
+            message.role === 'system' || 
+            message.role === 'system-language' || 
+            message.role === 'system-anthropic-cache'
+          );
+          
+        const totalSystemTokens = systemMessages.reduce((sum, message) => {
+            let tokenCount = estimateTokens(message.content);
+            
+            if (message.attachments) {
+              tokenCount += message.attachments.reduce((attachmentSum, attachment) => {
+                return attachmentSum + estimateTokens(attachment.extractedData?.cleaned_text || attachment.content);
+              }, 0);
+            }
+            
+            return sum + tokenCount;
+          }, 0);
     
         if (totalSystemTokens < 1024 && Object.values(cacheControl).some(value => value)) {
           toast({
-            title: 'Insufficient system message length for cache control usage',
+            title: `Insufficient system message length for cache control usage (${totalSystemTokens}/1024 tokens)`,
             description: 'For models with cache control, system messages should add up to at least 1024 tokens (approximately 4096 characters).',
             variant: 'destructive',
           });
@@ -135,6 +201,19 @@ const ModelPlayground: React.FC = () => {
                 selectedModels.map(async (model) => {
                     const startTime = Date.now();
                     try {
+                        let modelMessages = [...messages];
+                        if (model.id === 'claude-3-5-sonnet-20240620' && cacheControl[model.id]) {
+                            const systemAnthropicCacheMessage = modelMessages.find(msg => msg.role === 'system-anthropic-cache');
+                            if (systemAnthropicCacheMessage && systemAnthropicCacheMessage.attachments) {
+                                const attachmentsText = systemAnthropicCacheMessage.attachments
+                                    .map(att => `[Attachment: ${att.type}]\nTitle: ${att.extractedData?.title || 'N/A'}\nContent: ${att.extractedData?.cleaned_text || att.content}\n`)
+                                    .join('\n');
+                                systemAnthropicCacheMessage.content += '\n\n' + attachmentsText;
+                            }
+                        }
+
+                        console.log(modelMessages);
+
                         const res = await fetch(`/api/generate-${model.provider}`, {
                             method: 'POST',
                             headers: {
@@ -145,7 +224,7 @@ const ModelPlayground: React.FC = () => {
                                     ...model,
                                     cacheControl: cacheControl[model.id] || false
                                 }],
-                                messages,
+                                messages: modelMessages,
                                 apiKey: apiKeys[model.provider],
                             }),
                         });
@@ -205,23 +284,25 @@ const ModelPlayground: React.FC = () => {
                     <h3 className="text-sm text-gray-500 mb-2">You can paste an .env file or enter them manually. These are not persisted anywhere, even on refresh!</h3>
                     <ApiKeyInput ref={apiKeyColumnRef} onApiKeysChange={handleApiKeysChange} />
                 </div>
-                <div className="col-span-2 max-h-[1100px] overflow-y-scroll">
+                <div className="col-span-2 px-2 max-h-[1100px] overflow-y-scroll">
                     <div className="flex flex-col h-full">
                         <div className="flex-grow">
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-lg font-semibold">Prompts</h2>
-                                <Button 
-                                    className="bg-green-900 text-white hover:bg-green-800 border-green-800 px-3 text-sm"
-                                    onClick={handleRun} 
-                                    disabled={isLoading}
-                                >
-                                   <Play className="mr-2 w-4 h-4" /> {isLoading ? 'Running...' : 'Run'}
-                                </Button>
                             </div>
                             <PromptInput
                                 messages={messages}
                                 setMessages={setMessages}
                             />
+                            <div className="w-full py-4">
+                                <Button 
+                                    className="bg-green-900 text-white hover:bg-green-800 border-green-800 text-sm w-full"
+                                    onClick={handleRun} 
+                                    disabled={isLoading}
+                                >
+                                    <Play className="mr-2 w-4 h-4" /> {isLoading ? 'Running...' : 'Run'}
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -240,7 +321,7 @@ const ModelPlayground: React.FC = () => {
                     <ScrollArea className="h-full min-h-[800px] w-full rounded-md border p-4">
                         {selectedModels.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-full text-gray-500 mt-20">
-                                <Bot className="w-16 h-16 mb-4 stroke-current opacity-50" />
+                                <Bot className="w-10 h-10 mb-4 stroke-current opacity-50" />
                                 <p className="text-lg font-semibold mb-2">No models selected</p>
                                 <p className="text-sm text-gray-400 text-center max-w-xs">
                                     Choose models from the selector above to compare their responses

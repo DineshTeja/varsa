@@ -26,14 +26,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     await execAsync('pip install anthropic');
 
     const responses = await Promise.all(models.map(async (model: AnthropicModel) => {
-      const systemMessage = messages.find(msg => msg.role === 'system' || msg.role === 'system-language');
-      const userMessages = messages.filter(msg => msg.role !== 'system' && msg.role !== 'system-language');
+      const systemMessages = messages.filter(msg => msg.role === 'system' || msg.role === 'system-language' || msg.role === 'system-anthropic-cache');
+      const userMessages = messages.filter(msg => msg.role !== 'system' && msg.role !== 'system-language' && msg.role !== 'system-anthropic-cache');
 
       if (model.cacheControl) {
         const scriptPath = path.join(process.cwd(), 'src', 'app', 'scripts', 'anthropic-cache-control-beta.py');
-        const encodedSystemMessage = Buffer.from(systemMessage?.content || '').toString('base64');
+        const encodedSystemMessages = Buffer.from(JSON.stringify(systemMessages)).toString('base64');
         const encodedUserMessages = Buffer.from(JSON.stringify(userMessages)).toString('base64');
-        const command = `python3 "${scriptPath}" "${apiKey}" "${model.id}" "${encodedSystemMessage}" "${encodedUserMessages}"`;
+        const command = `python3 "${scriptPath}" "${apiKey}" "${model.id}" "${encodedSystemMessages}" "${encodedUserMessages}"`;
 
         const { stdout, stderr } = await execAsync(command);
         if (stderr) {
@@ -54,8 +54,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }))
         };
 
-        if (systemMessage) {
-          messageParams.system = systemMessage.content;
+        if (systemMessages.length > 0) {
+          messageParams.system = systemMessages.map(msg => msg.content).join('\n\n');
         }
 
         const message = await anthropic.messages.create(messageParams);

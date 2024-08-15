@@ -40,7 +40,7 @@ export default function Navbar() {
               <div className="px-2 sm:px-4 py-2 bg-green-50 rounded-full text-xs sm:text-sm text-green-800 flex items-center max-w-full overflow-hidden">
                 <span className="flex-shrink-0">🎉</span>
                 <hr className="mx-2 h-4 w-[1px] shadow-none shrink-0 bg-gray-300 hidden sm:block" />
-                <span className="font-medium flex-shrink-0 hidden sm:inline">New:</span>
+                <span className="font-medium flex-shrink-0 hidden sm:inline">Rollout:</span>
                 <span className="ml-1 truncate">
                   We now support prompt caching on Claude 3.5 Sonnet
                 </span>

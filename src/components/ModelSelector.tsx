@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ModelWithIcon } from '@/lib/modelUtils';
 import { PlusCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ModelSelectorProps {
   selectedModels: ModelWithIcon[];
@@ -39,15 +40,23 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ selectedModels, setSelect
           {models.map(model => {
             const isDisabled = !apiKeys[model.provider] || selectedModels.some(m => m.id === model.id);
             return (
-              <DropdownMenuItem
-                key={model.id}
-                onSelect={() => handleModelSelect(model)}
-                disabled={isDisabled}
-                className={`w-full ${isDisabled ? 'line-through opacity-50' : ''}`}
-              >
-                <model.icon className="mr-2 h-4 w-4" />
-                {model.name} {model.cacheControl && <span className="text-xs font-medium text-green-800 ml-4">* Supports Cache Control</span>}
-              </DropdownMenuItem>
+              <TooltipProvider key={model.id}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuItem
+                      onSelect={() => handleModelSelect(model)}
+                      disabled={isDisabled}
+                      className={`w-full ${isDisabled ? 'line-through opacity-50' : ''}`}
+                    >
+                      <model.icon className="mr-2 h-4 w-4" />
+                      {model.name} {model.cacheControl && <span className="text-xs font-medium text-green-800 ml-4">* Supports Cache Control</span>}
+                    </DropdownMenuItem>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{model.id}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             );
           })}
         </DropdownMenuContent>

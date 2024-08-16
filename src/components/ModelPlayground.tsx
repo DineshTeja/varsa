@@ -7,10 +7,13 @@ import ApiKeyInput from '@/components/ApiKeyInput';
 import ModelSelector from '@/components/ModelSelector';
 import PromptInput from '@/components/PromptInput';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp, Minus, Bot, Play } from "lucide-react";
+import { ChevronDown, ChevronUp, Minus, Bot, Play, Undo2, Book, Album, Omega } from "lucide-react";
 import { availableModels, ModelWithIcon, calculateCost } from '@/lib/modelUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { Switch } from '@/components/ui/switch';
+import { getRandomBenchmarkItem, getBenchmarkInstructions } from '@/lib/benchmarkUtils';
+import { Benchmark } from '@/lib/benchmarks';
+import { HuggingFaceIcon } from '@/lib/icons/huggingface';
 
 interface ModelResponse {
     model: string;
@@ -50,6 +53,10 @@ const ModelPlayground: React.FC = () => {
     const [apiKeys, setApiKeys] = useState<ApiKeys>({});
     const apiKeyColumnRef = useRef<HTMLDivElement>(null);
 
+    const [currentBenchmark, setCurrentBenchmark] = useState<Benchmark | null>(null);
+    const [correctAnswer, setCorrectAnswer] = useState<string | null>(null);
+    const benchmarkQuestionRef = useRef<string | null>(null);
+
     const [cacheControl, setCacheControl] = useState<{ [key: string]: boolean }>({});
 
     const getInitialMessages = () => {
@@ -63,6 +70,24 @@ const ModelPlayground: React.FC = () => {
             baseMessages.splice(2, 0, {
                 role: 'system-anthropic-cache',
                 content: 'Here are a few attachments about birds that you should use as context/knowledge for this conversation.',
+                isDefault: true
+            });
+        }
+
+        return baseMessages;
+    };
+
+    const getEmptyMessages = () => {
+        const baseMessages = [
+            { role: 'system', content: '', isDefault: true },
+            { role: 'system-language', content: '', isDefault: true },
+            { role: 'user', content: '', isDefault: true },
+        ];
+
+        if (Object.values(cacheControl).some(value => value)) {
+            baseMessages.splice(2, 0, {
+                role: 'system-anthropic-cache',
+                content: '',
                 isDefault: true
             });
         }
@@ -100,6 +125,35 @@ const ModelPlayground: React.FC = () => {
         return Math.ceil(text.length / 4);
       };
 
+    useEffect(() => {
+        if (currentBenchmark && benchmarkQuestionRef.current) {
+          const systemMessage = messages.find(msg => msg.role === 'system');
+          const userMessage = messages.find(msg => msg.role === 'user');
+      
+          if (
+            systemMessage?.content !== getBenchmarkInstructions(currentBenchmark) ||
+            userMessage?.content !== benchmarkQuestionRef.current
+          ) {
+            setCurrentBenchmark(null);
+            setCorrectAnswer(null);
+            benchmarkQuestionRef.current = null;
+          }
+        }
+      }, [messages, currentBenchmark]);
+    
+      const handleSetBenchmark = (benchmark: Benchmark) => {
+        const { prompt, answer } = getRandomBenchmarkItem(benchmark);
+        const instructions = getBenchmarkInstructions(benchmark);
+        
+        setCurrentBenchmark(benchmark);
+        setCorrectAnswer(answer);
+        benchmarkQuestionRef.current = prompt;
+        setMessages([
+          { role: 'system', content: instructions, isDefault: true },
+          { role: 'user', content: prompt, isDefault: true },
+        ]);
+      };
+
     const handleRun = async () => {
         setIsLoading(true);
         setResponses([]);
@@ -134,7 +188,9 @@ const ModelPlayground: React.FC = () => {
             return;
         }
     
-        if (messages.length < 3) {
+        if (!(messages.some(msg => msg.role === 'user') || messages.some(msg => msg.role === "system")) 
+            || (messages.some(msg => msg.role === 'user' && msg.content === '') 
+            || messages.some(msg => msg.role === 'system' && msg.content === ''))) {
             toast({
                 title: 'Missing prompts',
                 description: 'Please provide at least one user message.',
@@ -297,12 +353,69 @@ const ModelPlayground: React.FC = () => {
                     <h3 className="text-sm text-gray-500 mb-2">You can paste an <strong>.env file</strong> (just click on one of the fields and paste). These are not persisted anywhere, even on refresh!</h3>
                     <ApiKeyInput ref={apiKeyColumnRef} onApiKeysChange={handleApiKeysChange} />
                 </div>
-                <div className="col-span-2 px-2 max-h-[1100px] overflow-y-scroll">
+                <div className="col-span-5 lg:col-span-2 px-2 max-h-[1100px] overflow-y-auto">
                     <div className="flex flex-col h-full">
                         <div className="flex-grow">
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-lg font-semibold">Prompts</h2>
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-2 sm:space-y-0">
+                                <h2 className="text-lg font-semibold mb-2 sm:mb-0">Prompts</h2>
                             </div>
+                            <div className="flex flex-wrap gap-2 my-2">
+                                    <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleSetBenchmark('MMLU')}
+                                    className="w-full sm:w-auto"
+                                    >
+                                    <Album className="mr-2 h-4 w-4" />
+                                    MMLU
+                                    </Button>
+                                    <Button 
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleSetBenchmark('AI2 ARC Challenge')}
+                                    className="w-full sm:w-auto"
+                                    >
+                                    <HuggingFaceIcon className="mr-2 h-4 w-4" />
+                                    AI2 ARC
+                                    </Button>
+                                    <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleSetBenchmark('GSM8K')}
+                                    className="w-full sm:w-auto"
+                                    >
+                                    <Omega className="mr-2 h-4 w-4" />
+                                    GSM8K
+                                    </Button>
+                                    <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setMessages(getInitialMessages)}
+                                    className="w-full sm:w-auto"
+                                    >
+                                    <Undo2 className="mr-2 h-4 w-4" />
+                                    Default
+                                    </Button>
+                                    <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setMessages(getEmptyMessages)}
+                                    className="w-full sm:w-auto"
+                                    >
+                                    <Book className="mr-2 h-4 w-4" />
+                                    Clear
+                                    </Button>
+                            </div>
+                            {currentBenchmark && (
+                                <div className="my-2 px-3 py-2 bg-gray-100 rounded-md flex flex-col sm:flex-row items-start sm:items-center justify-between">
+                                    <span className="text-xs font-medium text-gray-600 mb-1 sm:mb-0">
+                                    Benchmark: <span className="text-green-800 font-bold">{currentBenchmark}</span>
+                                    </span>
+                                    <span className="text-xs font-medium">
+                                    Correct answer: <span className="text-green-800 font-bold">{correctAnswer}</span>
+                                    </span>
+                                </div>
+                            )}
                             <PromptInput
                                 messages={messages}
                                 setMessages={setMessages}
@@ -313,7 +426,7 @@ const ModelPlayground: React.FC = () => {
                                     onClick={handleRun} 
                                     disabled={isLoading}
                                 >
-                                    <Play className="mr-2 w-4 h-4" /> {isLoading ? 'Running...' : 'Run'}
+                                    <Play className="mr-2 h-4 w-4" /> {isLoading ? 'Running...' : 'Run'}
                                 </Button>
                             </div>
                         </div>

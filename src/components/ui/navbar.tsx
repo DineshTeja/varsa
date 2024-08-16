@@ -74,7 +74,8 @@ export default function Navbar() {
                 <ol className="mt-4 space-y-2 text-sm text-gray-600 list-decimal list-inside">
                   <li>Enter your API keys (don&apos;t worry, we never store them)</li>
                   <li>Select the models you want to compare</li>
-                  <li>Input your prompt and hit &quot;Run&quot;</li>
+                  <li>(Optional) Select the benchmark you want to use</li>
+                  <li>Input your prompt(s)/context and hit &quot;Run&quot;</li>
                 </ol>
                 <p className="mt-4 text-sm text-gray-600">
                   Compare output quality, response time, and cost across models to find the best fit for your needs.

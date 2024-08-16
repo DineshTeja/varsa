@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, MinusCircle, Paperclip,  Link, FileUp } from 'lucide-react';
+import { MinusCircle, Paperclip,  Link, FileUp, MessageCircle } from 'lucide-react';
 import { SiAnthropic } from 'react-icons/si';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -283,7 +283,7 @@ const PromptInput: React.FC<PromptInputProps> = ({
       ))}
       <div className="flex justify-end">
         <Button variant="outline" size="sm" onClick={handleAddMessage}>
-          <PlusCircle className="w-4 h-4 mr-1" /> Add Message
+          <MessageCircle className="w-4 h-4 mr-1" /> Add Message
         </Button>
       </div>
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

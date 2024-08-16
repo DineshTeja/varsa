@@ -230,7 +230,7 @@ const ModelPlayground: React.FC = () => {
                         });
     
                         if (!res.ok) {
-                            throw new Error(`Failed to generate response for ${model.name} [${res.statusText}]`);
+                            throw new Error(`Failed to generate response for ${model.name} [${res.statusText}] [${JSON.stringify(res)}]`);
                         }
     
                         const data = await res.json();

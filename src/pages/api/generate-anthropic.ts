@@ -23,7 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   });
 
   try {
-    await execAsync('pip install anthropic');
+    // await execAsync('pip install anthropic');
 
     const responses = await Promise.all(models.map(async (model: AnthropicModel) => {
       const systemMessages = messages.filter(msg => msg.role === 'system' || msg.role === 'system-language' || msg.role === 'system-anthropic-cache');

@@ -270,7 +270,7 @@ const ModelPlayground: React.FC = () => {
 
                     console.log(modelMessages);
 
-                    const res = await fetch(`/api/generate-${model.provider}`, {
+                    const res = await fetch(`/api/generate/generate-${model.provider}`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

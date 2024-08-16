@@ -30,20 +30,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const userMessages = messages.filter(msg => msg.role !== 'system' && msg.role !== 'system-language' && msg.role !== 'system-anthropic-cache');
 
       if (model.cacheControl) {
+        console.log('Executing cache control script');
         const scriptPath = path.join(process.cwd(), 'src', 'app', 'scripts', 'anthropic-cache-control-beta.py');
+        console.log('Script path:', scriptPath);
         const encodedSystemMessages = Buffer.from(JSON.stringify(systemMessages)).toString('base64');
         const encodedUserMessages = Buffer.from(JSON.stringify(userMessages)).toString('base64');
         const command = `python3 "${scriptPath}" "${apiKey}" "${model.id}" "${encodedSystemMessages}" "${encodedUserMessages}"`;
-
-        const { stdout, stderr } = await execAsync(command);
-        if (stderr) {
-          console.error('Python script error:', stderr);
-          throw new Error(stderr);
+        console.log('Executing command:', command);
+      
+        try {
+          const { stdout, stderr } = await execAsync(command);
+          console.log('Python script stdout:', stdout);
+          if (stderr) {
+            console.error('Python script stderr:', stderr);
+            throw new Error(stderr);
+          }
+          return {
+            model: model.name,
+            response: stdout.trim()
+          };
+        } catch (error) {
+          console.error('Error executing Python script:', error);
+          throw error;
         }
-        return {
-          model: model.name,
-          response: stdout.trim()
-        };
       } else {
         const messageParams: Anthropic.MessageCreateParams = {
           model: model.id,

@@ -228,11 +228,17 @@ const ModelPlayground: React.FC = () => {
                                 apiKey: apiKeys[model.provider],
                             }),
                         });
-    
+                        
                         if (!res.ok) {
-                            throw new Error(`Failed to generate response for ${model.name} [${res.statusText}] [${JSON.stringify(res)}]`);
+                            const errorText = await res.text();
+                            console.error(`Error response for ${model.name}:`, {
+                                status: res.status,
+                                statusText: res.statusText,
+                                body: errorText
+                            });
+                            throw new Error(`Failed to generate response for ${model.name} [${res.status}] [${res.statusText}] [${errorText}]`);
                         }
-    
+                        
                         const data = await res.json();
                         const response = data.responses[0];
                         return {

@@ -18,6 +18,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const systemMessages = messages.filter(msg => msg.role === 'system' || msg.role === 'system-language' || msg.role === 'system-anthropic-cache');
       const userMessages = messages.filter(msg => msg.role !== 'system' && msg.role !== 'system-language' && msg.role !== 'system-anthropic-cache');
 
+      console.log(systemMessages);
+
       const anthropic = new Anthropic({
         apiKey: apiKey,
         ...(model.cacheControl && {
@@ -38,7 +40,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           system: systemMessages.map(msg => ({
             type: "text",
             text: msg.content,
-            cache_control: { type: "ephemeral" }
+            ...(msg.role === 'system-anthropic-cache' && { cache_control: { type: "ephemeral" } })
           })),
           stream: false,
         };

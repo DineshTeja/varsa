@@ -198,79 +198,80 @@ const ModelPlayground: React.FC = () => {
         }
     
         try {
-            const allResponses = await Promise.all(
-                selectedModels.map(async (model) => {
-                    const startTime = Date.now();
-                    try {
-                        let modelMessages = [...messages];
-                        if (model.id === 'claude-3-5-sonnet-20240620' && cacheControl[model.id]) {
-                            const systemAnthropicCacheMessage = modelMessages.find(msg => msg.role === 'system-anthropic-cache');
-                            if (systemAnthropicCacheMessage && systemAnthropicCacheMessage.attachments) {
-                                const attachmentsText = systemAnthropicCacheMessage.attachments
-                                    .map(att => `[Attachment: ${att.type}]\nTitle: ${att.extractedData?.title || 'N/A'}\nContent: ${att.extractedData?.cleaned_text || att.content}\n`)
-                                    .join('\n');
-                                systemAnthropicCacheMessage.content += '\n\n' + attachmentsText;
-                            }
+            selectedModels.forEach(async (model) => {
+                const startTime = Date.now();
+                try {
+                    let modelMessages = [...messages];
+                    if (model.id === 'claude-3-5-sonnet-20240620' && cacheControl[model.id]) {
+                        const systemAnthropicCacheMessage = modelMessages.find(msg => msg.role === 'system-anthropic-cache');
+                        if (systemAnthropicCacheMessage && systemAnthropicCacheMessage.attachments) {
+                            const attachmentsText = systemAnthropicCacheMessage.attachments
+                                .map(att => `[Attachment: ${att.type}]\nTitle: ${att.extractedData?.title || 'N/A'}\nContent: ${att.extractedData?.cleaned_text || att.content}\n`)
+                                .join('\n');
+                            systemAnthropicCacheMessage.content += '\n\n' + attachmentsText;
                         }
-
-                        console.log(modelMessages);
-
-                        const res = await fetch(`/api/generate-${model.provider}`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                models: [{
-                                    ...model,
-                                    cacheControl: cacheControl[model.id] || false
-                                }],
-                                messages: modelMessages,
-                                apiKey: apiKeys[model.provider],
-                            }),
-                        });
-                        
-                        if (!res.ok) {
-                            const errorText = await res.text();
-                            console.error(`Error response for ${model.name}:`, {
-                                status: res.status,
-                                statusText: res.statusText,
-                                body: errorText
-                            });
-                            throw new Error(`Failed to generate response for ${model.name} [${res.status}] [${res.statusText}] [${errorText}]`);
-                        }
-                        
-                        const data = await res.json();
-                        const response = data.responses[0];
-                        const inputTokens = estimateTokens(modelMessages.map(msg => msg.content).join(' '));
-                        const outputTokens = estimateTokens(response.response);
-                        const cost = calculateCost(model, inputTokens, outputTokens);
-    
-                        return {
-                            ...response,
-                            responseTime: Date.now() - startTime,
-                            error: false,
-                            cost,
-                        };
-                    } catch (error) {
-                        console.error(`Error generating response for ${model.name}:`, error);
-                        return {
-                            model: model.name,
-                            response: `${String(error)}`,
-                            responseTime: Date.now() - startTime,
-                            error: true,
-                        };
                     }
-                })
-            );
-    
-            setResponses(allResponses);
+
+                    console.log(modelMessages);
+
+                    const res = await fetch(`/api/generate-${model.provider}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            models: [{
+                                ...model,
+                                cacheControl: cacheControl[model.id] || false
+                            }],
+                            messages: modelMessages,
+                            apiKey: apiKeys[model.provider],
+                        }),
+                    });
+                    
+                    if (!res.ok) {
+                        const errorText = await res.text();
+                        console.error(`Error response for ${model.name}:`, {
+                            status: res.status,
+                            statusText: res.statusText,
+                            body: errorText
+                        });
+                        throw new Error(`Failed to generate response for ${model.name} [${res.status}] [${res.statusText}] [${errorText}]`);
+                    }
+                    
+                    const data = await res.json();
+                    const response = data.responses[0];
+                    const inputTokens = estimateTokens(modelMessages.map(msg => msg.content).join(' '));
+                    const outputTokens = estimateTokens(response.response);
+                    const cost = calculateCost(model, inputTokens, outputTokens);
+
+                    const newResponse = {
+                        ...response,
+                        responseTime: Date.now() - startTime,
+                        error: false,
+                        cost,
+                    };
+
+                    setResponses(prev => [...prev.filter(r => r.model !== model.name), newResponse]);
+                    setLoadingModels(prev => ({ ...prev, [model.id]: false }));
+                } catch (error) {
+                    console.error(`Error generating response for ${model.name}:`, error);
+                    const errorResponse = {
+                        model: model.name,
+                        response: `${String(error)}`,
+                        responseTime: Date.now() - startTime,
+                        error: true,
+                        cost: 0,
+                    };
+                    setResponses(prev => [...prev.filter(r => r.model !== model.name), errorResponse]);
+                    setLoadingModels(prev => ({ ...prev, [model.id]: false }));
+                }
+            });
         } catch (error) {
             console.error('Error generating response:', error);
             setResponses([{ model: 'Error', response: 'An error occurred while generating the response.', responseTime: 0, cost: 0 }]);
         } finally {
             setIsLoading(false);
-            setLoadingModels({});
         }
     };
 

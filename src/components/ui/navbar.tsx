@@ -52,7 +52,7 @@ export default function Navbar() {
           </Tooltip>
         </TooltipProvider>
       </div>
-      <div className="flex items-center justify-end space-x-2 p-2 rounded-lg">
+      {/* <div className="flex items-center justify-end space-x-2 p-2 rounded-lg">
         <Label htmlFor="playground-mode" className={`text-sm ${isPlayground ? "text-gray-600" : "text-green-800 font-medium"}`}>
           Example
         </Label>
@@ -65,7 +65,7 @@ export default function Navbar() {
         <Label htmlFor="example-mode" className={`text-sm ${isPlayground ? "text-green-800 font-medium" : "text-gray-600"}`}>
           Playground
         </Label>
-      </div>
+      </div> */}
     </nav>
   );
 }

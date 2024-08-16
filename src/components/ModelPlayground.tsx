@@ -8,7 +8,7 @@ import ModelSelector from '@/components/ModelSelector';
 import PromptInput from '@/components/PromptInput';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronUp, Minus, Bot, Play } from "lucide-react";
-import { availableModels, ModelWithIcon } from '@/lib/modelUtils';
+import { availableModels, ModelWithIcon, calculateCost } from '@/lib/modelUtils';
 import { useToast } from '@/components/ui/use-toast';
 import { Switch } from '@/components/ui/switch';
 
@@ -17,6 +17,7 @@ interface ModelResponse {
     response: string;
     responseTime: number;
     error?: boolean;
+    cost: number;
 }
 
 interface ApiKeys {
@@ -241,10 +242,15 @@ const ModelPlayground: React.FC = () => {
                         
                         const data = await res.json();
                         const response = data.responses[0];
+                        const inputTokens = estimateTokens(modelMessages.map(msg => msg.content).join(' '));
+                        const outputTokens = estimateTokens(response.response);
+                        const cost = calculateCost(model, inputTokens, outputTokens);
+    
                         return {
                             ...response,
                             responseTime: Date.now() - startTime,
                             error: false,
+                            cost,
                         };
                     } catch (error) {
                         console.error(`Error generating response for ${model.name}:`, error);
@@ -261,7 +267,7 @@ const ModelPlayground: React.FC = () => {
             setResponses(allResponses);
         } catch (error) {
             console.error('Error generating response:', error);
-            setResponses([{ model: 'Error', response: 'An error occurred while generating the response.', responseTime: 0 }]);
+            setResponses([{ model: 'Error', response: 'An error occurred while generating the response.', responseTime: 0, cost: 0 }]);
         } finally {
             setIsLoading(false);
             setLoadingModels({});
@@ -287,7 +293,7 @@ const ModelPlayground: React.FC = () => {
             <div className="grid grid-cols-5 gap-6 flex-grow overflow-hidden">
                 <div className="col-span-1 max-h-[1100px] overflow-y-scroll" ref={apiKeyColumnRef}>
                     <h2 className="text-lg font-semibold mb-2">API Keys & Tokens</h2>
-                    <h3 className="text-sm text-gray-500 mb-2">You can paste an .env file or enter them manually. These are not persisted anywhere, even on refresh!</h3>
+                    <h3 className="text-sm text-gray-500 mb-2">You can paste an <strong>.env file</strong> (just click on one of the fields and paste). These are not persisted anywhere, even on refresh!</h3>
                     <ApiKeyInput ref={apiKeyColumnRef} onApiKeysChange={handleApiKeysChange} />
                 </div>
                 <div className="col-span-2 px-2 max-h-[1100px] overflow-y-scroll">
@@ -372,6 +378,9 @@ const ModelPlayground: React.FC = () => {
                                                     )}
                                                     <span className="text-xs text-gray-500 ml-1">
                                                         {(responses.find(r => r.model === model.name)?.responseTime ?? 0) / 1000}s
+                                                    </span>
+                                                    <span className="text-xs font-medium text-blue-500 ml-2">
+                                                        ${responses.find(r => r.model === model.name)?.cost.toFixed(6) ?? '0.000000'}
                                                     </span>
                                                 </div>
                                             )}

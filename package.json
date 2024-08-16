@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.25.2",
+    "@anthropic-ai/sdk": "^0.26.1",
     "@api/pplx": "file:.api/apis/pplx",
     "@google/generative-ai": "^0.17.0",
     "@huggingface/inference": "^2.8.0",

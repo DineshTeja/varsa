@@ -2,6 +2,8 @@ import React, { useState, useEffect, forwardRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { providerIcons } from '@/lib/modelUtils';
 import { useToast } from "@/components/ui/use-toast"
+import { Eye, EyeOff } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface ApiKeys {
   [key: string]: string;
@@ -19,6 +21,13 @@ const ApiKeyInput = forwardRef<HTMLDivElement, ApiKeyInputProps>(({ onApiKeysCha
       acc[provider] = '';
       return acc;
     }, {} as ApiKeys)
+  );
+
+  const [visibleKeys, setVisibleKeys] = useState<{ [key: string]: boolean }>(
+    Object.keys(providerIcons).reduce((acc, provider) => {
+      acc[provider] = false;
+      return acc;
+    }, {} as { [key: string]: boolean })
   );
 
   const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
@@ -63,18 +72,37 @@ const ApiKeyInput = forwardRef<HTMLDivElement, ApiKeyInputProps>(({ onApiKeysCha
     onApiKeysChange(newApiKeys);
   };
 
+  const toggleVisibility = (provider: string) => {
+    setVisibleKeys(prev => ({ ...prev, [provider]: !prev[provider] }));
+  };
+
   return (
     <div ref={ref} className="space-y-4 p-2" onPaste={handlePaste}>
       {Object.entries(providerIcons).map(([provider, { icon: Icon, displayName }]) => (
         <div key={provider} className="flex items-center">
           <Icon className="mr-2 h-5 w-5" />
-          <Input
-            placeholder={`${displayName}`}
-            value={apiKeys[provider]}
-            onChange={(e) => handleApiKeyChange(provider, e.target.value)}
-            type="password"
-            className="flex-grow"
-          />
+          <div className="relative flex-grow">
+            <Input
+              placeholder={`${displayName}`}
+              value={apiKeys[provider]}
+              onChange={(e) => handleApiKeyChange(provider, e.target.value)}
+              type={visibleKeys[provider] ? "text" : "password"}
+              className="pr-10"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+              onClick={() => toggleVisibility(provider)}
+            >
+              {visibleKeys[provider] ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
         </div>
       ))}
     </div>

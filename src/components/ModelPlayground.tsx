@@ -345,6 +345,8 @@ const ModelPlayground: React.FC = () => {
         }));
       };
 
+    const isGenerating = Object.values(loadingModels).some(isLoading => isLoading);
+
     return (
         <div className="w-full h-[1100px] bg-white shadow-sm rounded-lg p-6 flex flex-col">
             <div className="grid grid-cols-5 gap-6 flex-grow overflow-hidden">
@@ -424,9 +426,10 @@ const ModelPlayground: React.FC = () => {
                                 <Button 
                                     className="bg-green-900 text-white hover:bg-green-800 border-green-800 text-sm w-full"
                                     onClick={handleRun} 
-                                    disabled={isLoading}
+                                    disabled={isLoading || isGenerating}
                                 >
-                                    <Play className="mr-2 h-4 w-4" /> {isLoading ? 'Running...' : 'Run'}
+                                    <Play className="mr-2 h-4 w-4" /> 
+                                    {isLoading || isGenerating ? 'Running...' : 'Run'}
                                 </Button>
                             </div>
                         </div>

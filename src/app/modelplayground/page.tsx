@@ -8,7 +8,7 @@ export default function PlaygroundPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
-      <div className="flex-grow flex flex-col items-center justify-start px-4 pb-8">
+      <div className="flex-grow flex flex-col items-center justify-start px-2 pb-8">
         <ModelPlayground />
       </div>
     </div>
